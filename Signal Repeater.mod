@@ -4,8 +4,8 @@ return {
 
 		new_mod("Signal Repeater", {
 			mod_script       = "Signal Repeater/scripts/mods/Signal Repeater/Signal Repeater",
-			mod_data         = "Signal Repeater/scripts/mods/Signal Repeater/data",
-			mod_localization = "Signal Repeater/localization/Signal Repeater",
+			mod_data         = "Signal Repeater/scripts/mods/Signal Repeater/Signal Repeater_data",
+			mod_localization = "Signal Repeater/scripts/mods/Signal Repeater/Signal Repeater_localization",
 		})
 	end,
 	packages = {},

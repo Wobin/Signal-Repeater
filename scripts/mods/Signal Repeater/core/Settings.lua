@@ -27,7 +27,9 @@ end
 function Settings.refresh()
 	cache.enabled      = get_bool("enabled", true)
 	cache.volume       = get_number("volume", 100)
-	cache.max_distance = get_number("max_distance", 35)
+	cache.max_distance = get_number("audible_range", 150)
+	cache.debug        = get_bool("debug", false)
+	cache.sound_test   = get_bool("sound_test", false)
 	cache.per_cue      = {}
 end
 
@@ -46,6 +48,8 @@ end
 function Settings.enabled()       return cache.enabled end
 function Settings.volume()        return cache.volume end
 function Settings.max_distance()  return cache.max_distance end
+function Settings.debug()         return cache.debug end
+function Settings.sound_test()    return cache.sound_test end
 function Settings.cue_enabled(id) return per_cue(id).enabled end
 function Settings.suppress(id)    return per_cue(id).suppress end
 
