@@ -19,6 +19,7 @@ local Vector3 = Vector3
 local math_random = math.random
 local math_huge = math.huge
 local pairs = pairs
+local table_remove = table.remove
 local pcall = pcall
 local tostring = tostring
 
@@ -123,6 +124,26 @@ local function stop_constant(ramp)
 		mod.simple_audio.stop_file(ramp.constant_id)
 		ramp.constant_id = nil
 	end
+end
+
+local TICK_HISTORY = 8
+
+local function remember_tick(ramp, play_id)
+	local ids = ramp.tick_ids
+	ids[#ids + 1] = play_id
+	if #ids > TICK_HISTORY then
+		table_remove(ids, 1)
+	end
+end
+
+local function stop_ramp_sounds(ramp)
+	stop_constant(ramp)
+
+	local ids = ramp.tick_ids
+	for i = 1, #ids do
+		mod.simple_audio.stop_file(ids[i])
+	end
+	ramp.tick_ids = {}
 end
 
 local function target_unit_of(unit)
@@ -237,6 +258,7 @@ function CuePlayer.start_ramp(cue, unit)
 		timer = math_huge,
 		target_timer = math_huge,
 		follow_timer = 0,
+		tick_ids = {},
 	}
 	Debug.ramp(cue, "started")
 end
@@ -264,7 +286,7 @@ function CuePlayer.stop_unit(cue, unit)
 
 	local ramp = ramps[key]
 	if ramp then
-		stop_constant(ramp)
+		stop_ramp_sounds(ramp)
 		ramps[key] = nil
 		Debug.ramp(cue, "ended")
 	end
@@ -279,7 +301,7 @@ function CuePlayer.stop_cue(cue_key)
 	end
 	for key, ramp in pairs(ramps) do
 		if ramp.cue.key == cue_key then
-			stop_constant(ramp)
+			stop_ramp_sounds(ramp)
 			ramps[key] = nil
 		end
 	end
@@ -306,11 +328,11 @@ function CuePlayer.update(dt)
 		local cue = ramp.cue
 
 		if not unit_alive(unit) then
-			stop_constant(ramp)
+			stop_ramp_sounds(ramp)
 			ramps[key] = nil
 			Debug.ramp(cue, "ended")
 		elseif not enabled or not mod.settings.cue_enabled(cue.setting_id) then
-			stop_constant(ramp)
+			stop_ramp_sounds(ramp)
 		else
 			if not player_pos_done then
 				player_pos = local_player_position()
@@ -363,7 +385,7 @@ function CuePlayer.update(dt)
 						ramp.timer = 0
 						local path = resolve_layered(cue, listener_distance)
 						if path then
-							mod.simple_audio.play_file(
+							local tick_id = mod.simple_audio.play_file(
 								path,
 								{
 									audio_type = "sfx",
@@ -372,6 +394,9 @@ function CuePlayer.update(dt)
 								},
 								unit, DECAY, cue_min_distance(cue), cue_max_distance(cue)
 							)
+							if tick_id then
+								remember_tick(ramp, tick_id)
+							end
 						end
 					end
 				end

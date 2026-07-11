@@ -1,0 +1,53 @@
+name: Release Signal Repeater
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to upload (e.g. 1.0.0)
+        required: true
+
+jobs:
+  package-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+
+      - name: Set version
+        run: echo "VERSION=${{ github.event.release.tag_name || inputs.version }}" >> "$GITHUB_ENV"
+
+      - name: Package (no git artefacts)
+        run: |
+          git archive --format=zip --prefix="Signal Repeater/" \
+            -o "Signal-Repeater-${VERSION}.zip" HEAD
+
+      - name: Verify zip contents
+        run: |
+          unzip -l "Signal-Repeater-${VERSION}.zip"
+          if unzip -l "Signal-Repeater-${VERSION}.zip" | grep -E '\.git|\.github|tests/'; then
+            echo "Dev artefacts found in zip" && exit 1
+          fi
+          unzip -l "Signal-Repeater-${VERSION}.zip" | grep -q 'Signal Repeater/Signal Repeater.mod' \
+            || { echo "Missing Signal Repeater.mod" && exit 1; }
+          unzip -l "Signal-Repeater-${VERSION}.zip" | grep -q 'audio/cues/poxburster_beep/' \
+            || { echo "Missing cue audio" && exit 1; }
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: Signal-Repeater-${{ env.VERSION }}
+          path: Signal-Repeater-${{ env.VERSION }}.zip
+
+      - name: Upload to Nexus Mods
+        if: ${{ !github.event.release.prerelease }}
+        uses: Nexus-Mods/upload-action@v1.0.0-beta.8
+        with:
+          api_key: ${{ secrets.NEXUSMODS_APIKEY }}
+          file_id: ${{ vars.NEXUS_FILE_ID }}
+          filename: Signal-Repeater-${{ env.VERSION }}.zip
+          version: ${{ env.VERSION }}
+          display_name: Signal Repeater ${{ env.VERSION }}
+          category: main
+          description: ${{ github.event.release.body }}
