@@ -64,8 +64,18 @@ for _, cue in ipairs(Catalog) do
 			assert(glob_count(audio.pattern) > 0, key .. ": " .. what .. " glob matches nothing: " .. audio.pattern)
 		end
 	end
-	check_audio(cue.audio, "audio")
-	if cue.far_audio then check_audio(cue.far_audio, "far_audio") end
+	-- A cue has either a single audio source, or `layers` played simultaneously (the plasma
+	-- event fires two actions at once: a charge tone plus an overlay).
+	assert(cue.audio or cue.layers, key .. ": has neither audio nor layers")
+	assert(not (cue.audio and cue.layers), key .. ": has both audio and layers")
+	if cue.audio then
+		check_audio(cue.audio, "audio")
+	else
+		assert(#cue.layers >= 2, key .. ": layers needs at least 2 entries")
+		for i, layer in ipairs(cue.layers) do
+			check_audio(layer, "layer " .. i)
+		end
+	end
 	if cue.ramp and cue.ramp.constant then
 		assert(exists(cue.ramp.constant.path), key .. ": constant loop missing: " .. cue.ramp.constant.path)
 	end

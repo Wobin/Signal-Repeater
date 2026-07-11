@@ -152,7 +152,16 @@ end
 
 local function apply_position(entry)
 	if not unit_alive(entry.unit) then return end
-	mod.simple_audio.set_position(entry.play_id, entry.unit, DECAY, cue_min_distance(entry.cue), cue_max_distance(entry.cue))
+	local min_d, max_d = cue_min_distance(entry.cue), cue_max_distance(entry.cue)
+	for i = 1, #entry.play_ids do
+		mod.simple_audio.set_position(entry.play_ids[i], entry.unit, DECAY, min_d, max_d)
+	end
+end
+
+local function stop_entry(entry)
+	for i = 1, #entry.play_ids do
+		mod.simple_audio.stop_file(entry.play_ids[i])
+	end
 end
 
 local overlap_seq = 0
@@ -169,41 +178,52 @@ function CuePlayer.play(cue, unit)
 		if active[key] then return end
 	end
 
-	local path = resolve_audio(cue)
-	if not path then return end
+	local layers = cue.layers or { cue.audio }
+	local entry = { unit = unit, cue = cue, elapsed = 0, throttle = 0, play_ids = {} }
+	local first_path
 
-	local settings = {
-		audio_type = "sfx",
-		volume = cue_volume(cue),
-		loop = cue.mode == "loop" or nil,
-		filters = cue.filters,
-	}
+	for i = 1, #layers do
+		local path = resolve_audio(cue, layers[i], cue.key .. "|L" .. i)
+		if path then
+			first_path = first_path or path
 
-	local entry = { unit = unit, cue = cue, elapsed = 0, throttle = 0 }
+			local settings = {
+				audio_type = "sfx",
+				volume = cue_volume(cue),
+				loop = cue.mode == "loop" or nil,
+				filters = cue.filters,
+			}
 
-	settings.on_update = function(play_id, dt)
-		entry.throttle = entry.throttle + dt
-		if entry.throttle >= FOLLOW_THROTTLE then
-			entry.throttle = 0
-			apply_position(entry)
+			if i == 1 then
+				settings.on_update = function(play_id, dt)
+					entry.throttle = entry.throttle + dt
+					if entry.throttle >= FOLLOW_THROTTLE then
+						entry.throttle = 0
+						apply_position(entry)
+					end
+				end
+				settings.on_finished = function()
+					active[key] = nil
+				end
+			end
+
+			local id = mod.simple_audio.play_file(
+				path, settings, unit, DECAY, cue_min_distance(cue), cue_max_distance(cue)
+			)
+			if id then
+				entry.play_ids[#entry.play_ids + 1] = id
+			end
 		end
 	end
-	settings.on_finished = function()
-		active[key] = nil
-	end
 
-	local play_id = mod.simple_audio.play_file(
-		path, settings, unit, DECAY, cue_min_distance(cue), cue_max_distance(cue)
-	)
-	if not play_id then return end
+	if not entry.play_ids[1] then return end
 
-	entry.play_id = play_id
 	active[key] = entry
 	apply_position(entry)
 
 	if mod.settings.debug() then
 		local player_pos = local_player_position()
-		Debug.played(cue, path, player_pos and Vector3.distance(unit_position(unit), player_pos) or nil)
+		Debug.played(cue, first_path, player_pos and Vector3.distance(unit_position(unit), player_pos) or nil)
 	end
 end
 
@@ -228,7 +248,7 @@ function CuePlayer.stop_unit(cue, unit)
 	if cue.overlap then
 		for k, entry in pairs(active) do
 			if entry.cue == cue and entry.unit == unit then
-				mod.simple_audio.stop_file(entry.play_id)
+				stop_entry(entry)
 				active[k] = nil
 				Debug.stopped(cue, "stop event")
 			end
@@ -236,7 +256,7 @@ function CuePlayer.stop_unit(cue, unit)
 	else
 		local entry = active[key]
 		if entry then
-			mod.simple_audio.stop_file(entry.play_id)
+			stop_entry(entry)
 			active[key] = nil
 			Debug.stopped(cue, "stop event")
 		end
@@ -253,7 +273,7 @@ end
 function CuePlayer.stop_cue(cue_key)
 	for key, entry in pairs(active) do
 		if entry.cue.key == cue_key then
-			mod.simple_audio.stop_file(entry.play_id)
+			stop_entry(entry)
 			active[key] = nil
 		end
 	end
@@ -274,7 +294,7 @@ function CuePlayer.update(dt)
 		local expired = cue.max_duration and entry.elapsed >= cue.max_duration
 		local turned_off = not enabled or not mod.settings.cue_enabled(cue.setting_id)
 		if (not unit_alive(entry.unit)) or expired or turned_off then
-			mod.simple_audio.stop_file(entry.play_id)
+			stop_entry(entry)
 			active[key] = nil
 			Debug.stopped(cue, expired and "max_duration" or (turned_off and "disabled" or "unit dead"))
 		end

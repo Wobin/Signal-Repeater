@@ -18,7 +18,10 @@ return {
 	{
 		key = "plasma_charge", setting_id = "plasma_charge",
 		hook = { kind = "effect_template", template = "renegade_plasma_gunner_charge_up" },
-		audio = { kind = "glob", pattern = "mods/Signal Repeater/audio/cues/plasma_charge/*.ogg" },
+		layers = {
+			{ kind = "glob", pattern = "mods/Signal Repeater/audio/cues/plasma_charge/tone/*.ogg" },
+			{ kind = "glob", pattern = "mods/Signal Repeater/audio/cues/plasma_charge/overlay/*.ogg" },
+		},
 		mode = "loop",
 		max_duration = 5,
 		suppress_events = { "wwise/events/weapon/play_minion_plasmapistol_charge_02" },
@@ -75,8 +78,6 @@ return {
 			},
 		},
 		audio = { kind = "glob", pattern = "mods/Signal Repeater/audio/cues/poxburster_beep/*.ogg" },
-		far_audio = { kind = "glob", pattern = "mods/Signal Repeater/audio/cues/poxburster_far/*.ogg" },
-		layer_blend = { near_end = 9.88, far_start = 35.12 },
 		mode = "ramped_tick",
 		gain = 2.0,
 		suppress_events = { "wwise/events/minions/play_enemy_combat_poxwalker_bomber_beep_loop" },
