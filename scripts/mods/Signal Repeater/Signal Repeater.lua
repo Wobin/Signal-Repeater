@@ -2,12 +2,12 @@
 	Name: Signal Repeater
 	Author: Wobin
 	Date: 13/07/2026
-	Version: 2.0.0
+	Version: 2.0.1
 	Repository: https://github.com/Wobin/Signal-Repeater
 ]]--
 
 local mod = get_mod("Signal Repeater")
-mod.version = "2.0.0"
+mod.version = "2.0.1"
 
 local ROOT = "Signal Repeater/scripts/mods/Signal Repeater/"
 
@@ -15,6 +15,7 @@ mod.settings = mod:io_dofile(ROOT .. "core/Settings")
 mod.cue_debug = mod:io_dofile(ROOT .. "core/Debug")
 mod.curves = mod:io_dofile(ROOT .. "core/Curves")
 mod.units = mod:io_dofile(ROOT .. "core/Units")
+mod.occlusion = mod:io_dofile(ROOT .. "core/Occlusion")
 mod.footstep_surfaces = mod:io_dofile(ROOT .. "cues/FootstepSurfaces")
 mod.catalog = mod:io_dofile(ROOT .. "cues/CueCatalog")
 mod.cue_player = mod:io_dofile(ROOT .. "playback/CuePlayer")

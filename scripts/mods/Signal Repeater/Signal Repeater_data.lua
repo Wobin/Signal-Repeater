@@ -21,7 +21,7 @@ return {
 				sub_widgets = {
 					{ setting_id = "enabled", type = "checkbox", default_value = true },
 					{ setting_id = "volume", type = "numeric", default_value = 100, range = { 0, 200 } },
-					{ setting_id = "audible_range", type = "numeric", default_value = 150, range = { 20, 200 } },
+					{ setting_id = "audible_range", type = "numeric", default_value = 100, range = { 25, 300 } },
 					{ setting_id = "repeat_all", type = "checkbox", default_value = true },
 					{ setting_id = "mute_all", type = "checkbox", default_value = false },
 					{ setting_id = "sound_test", type = "checkbox", default_value = false },

@@ -64,3 +64,29 @@ close(Curves.pitch_rate(-200), 0.89, 0.005, "-200 cents (burster at 50m)")
 assert(Curves.pitch_filter_string(1.26) == "asetrate=48000*1.26,aresample=48000", "filter string shape")
 
 print("test_curves OK")
+
+-- Distance is conveyed by MUFFLING, not volume: Darktide's attenuation keeps VolumeDry nearly flat
+-- (0dB -> -1dB over 60m) and ramps the low-pass instead (0 -> 45). We reproduce that curve.
+local trapper_footstep_lpf = { { 0, 0 }, { 60, 45 } }
+
+local function cutoff_at(points, d)
+	return Curves.lpf_cutoff(Curves.piecewise(points, d))
+end
+
+assert(Curves.lowpass_filter(0) == nil, "no filter at zero low-pass (bypass)")
+assert(cutoff_at(trapper_footstep_lpf, 0) == 20000, "full bandwidth at the listener")
+
+-- monotonic: further away must never be brighter
+local previous = math.huge
+for d = 0, 60, 5 do
+	local hz = cutoff_at(trapper_footstep_lpf, d)
+	assert(hz <= previous, "cutoff must fall with distance, rose at " .. d .. "m")
+	previous = hz
+end
+
+-- and it must actually bite: a footstep at the edge of its range is dull, not crisp
+assert(cutoff_at(trapper_footstep_lpf, 60) < 1000,
+	"a 60m footstep should be heavily muffled, got " .. cutoff_at(trapper_footstep_lpf, 60) .. "Hz")
+assert(Curves.lpf_cutoff(100) == 120, "clamps to the floor at maximum low-pass")
+
+print("test_curves OK (piecewise, pitch, and the game's distance low-pass)")

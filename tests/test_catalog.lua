@@ -150,6 +150,18 @@ for _, cue in ipairs(Catalog) do
 		assert(Loc[cue.setting_id .. suffix], key .. ": missing localization for " .. cue.setting_id .. suffix)
 	end
 
+	-- Every cue's range is the attenuation radius extracted from the game's own soundbank, so a cue
+	-- carries exactly as far as the game carries it. The audible_range setting scales all of them.
+	-- A missing range would silently fall back to a default and misrepresent that enemy's reach.
+	assert(type(cue.range) == "number" and cue.range > 0,
+		key .. ": missing range (must be the game's attenuation radius, in metres)")
+	assert(cue.max_distance == nil,
+		key .. ": max_distance is obsolete, use range (the game's own radius)")
+	if cue.min_distance then
+		assert(cue.min_distance < cue.range,
+			key .. ": min_distance (" .. cue.min_distance .. ") is not inside range (" .. cue.range .. ")")
+	end
+
 	-- A ramped cue needs a curve; a non-ramped one must not carry ramp settings by accident.
 	if cue.mode == "ramped_tick" then
 		assert(cue.ramp and cue.ramp.curve, key .. ": ramped_tick without a curve")

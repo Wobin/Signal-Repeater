@@ -30,6 +30,26 @@ function Curves.piecewise(points, distance)
 	return points[n][2]
 end
 
+local LPF_MAX_HZ = 20000
+local LPF_DECADES = 3
+local LPF_MIN_HZ = 120
+local LPF_BYPASS = 1
+
+function Curves.lpf_cutoff(lpf)
+	local hz = LPF_MAX_HZ * 10 ^ (-LPF_DECADES * lpf / 100)
+	if hz < LPF_MIN_HZ then
+		return LPF_MIN_HZ
+	end
+	return math_floor(hz + 0.5)
+end
+
+function Curves.lowpass_filter(lpf)
+	if not lpf or lpf < LPF_BYPASS then
+		return nil
+	end
+	return string_format("lowpass=f=%d", Curves.lpf_cutoff(lpf))
+end
+
 function Curves.pitch_rate(cents)
 	local rate = 2 ^ (cents / 1200)
 	return math_floor(rate * 100 + 0.5) / 100

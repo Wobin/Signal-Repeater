@@ -21,7 +21,7 @@ end
 function Settings.refresh()
 	cache.enabled      = get_bool("enabled", true)
 	cache.volume       = get_number("volume", 100)
-	cache.max_distance = get_number("audible_range", 150)
+	cache.range_scale  = get_number("audible_range", 100) / 100
 	cache.debug        = get_bool("debug", false)
 	cache.sound_test   = get_bool("sound_test", false)
 	cache.isolate      = get_bool("isolate_cues", false)
@@ -50,7 +50,7 @@ function Settings.active()
 end
 
 function Settings.volume()        return cache.volume end
-function Settings.max_distance()  return cache.max_distance end
+function Settings.range_scale()   return cache.range_scale end
 function Settings.debug()         return cache.debug end
 function Settings.sound_test()    return cache.sound_test end
 function Settings.isolate()      return cache.isolate end

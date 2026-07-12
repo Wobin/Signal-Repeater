@@ -37,8 +37,10 @@ local function cue_volume(cue)
 	return mod.settings.volume() * (cue.gain or 1)
 end
 
+local DEFAULT_RANGE = 60
+
 local function cue_max_distance(cue)
-	return cue.max_distance or mod.settings.max_distance()
+	return (cue.range or DEFAULT_RANGE) * mod.settings.range_scale()
 end
 
 local function cue_min_distance(cue)
@@ -140,14 +142,36 @@ local function ramp_interval(params, distance)
 	return Curves.interval_at(params.curve, distance)
 end
 
-local function pitch_filter(cue, distance)
-	local points = cue.ramp and cue.ramp.pitch_cents
-	if not points or not distance then
+local function listener_distance(unit)
+	local pm = Managers.player
+	if not pm then return nil end
+	local player = pm:local_player_safe(1)
+	if not player then return nil end
+	local player_unit = player.player_unit
+	if not unit_alive(player_unit) or not unit_alive(unit) then return nil end
+	return Vector3.distance(unit_position(unit), unit_position(player_unit))
+end
+
+local OCCLUSION_LPF = 45
+local OCCLUSION_VOLUME = 0.45
+
+local function distance_filter(cue, distance, occluded)
+	if cue.filters then
 		return cue.filters
 	end
+	if not cue.lpf or not distance then
+		return nil
+	end
 
-	local cents = Curves.piecewise(points, distance)
-	return Curves.pitch_filter_string(Curves.pitch_rate(cents))
+	local lpf = Curves.piecewise(cue.lpf, distance) + OCCLUSION_LPF * (occluded or 0)
+	if lpf > 100 then
+		lpf = 100
+	end
+	return Curves.lowpass_filter(lpf)
+end
+
+local function occlusion_volume(occluded)
+	return 1 - (1 - OCCLUSION_VOLUME) * (occluded or 0)
 end
 
 local function stop_constant(ramp)
@@ -246,6 +270,8 @@ function CuePlayer.play(cue, unit, explicit_path)
 	local layers = explicit_path and { false } or (cue.layers or { cue.audio })
 	local entry = { unit = unit, cue = cue, elapsed = 0, throttle = 0, play_ids = {} }
 	local first_path
+	local play_distance = listener_distance(unit)
+	local play_occluded = mod.occlusion.fraction(unit)
 
 	for i = 1, #layers do
 		local path = explicit_path or resolve_audio(cue, layers[i], cue.key .. "|L" .. i, unit)
@@ -254,9 +280,9 @@ function CuePlayer.play(cue, unit, explicit_path)
 
 			local settings = {
 				audio_type = mod.settings.audio_type(),
-				volume = cue_volume(cue),
+				volume = cue_volume(cue) * occlusion_volume(play_occluded),
 				loop = cue.mode == "loop" or nil,
-				filters = cue.filters,
+				filters = distance_filter(cue, play_distance, play_occluded),
 			}
 
 			if i == 1 then
@@ -404,7 +430,8 @@ function CuePlayer.update(dt)
 			if reference_pos then
 				local params = cue.ramp
 				local d = Vector3.distance(emitter_pos, reference_pos)
-				local listener_distance = player_pos and Vector3.distance(emitter_pos, player_pos) or nil
+				local ramp_distance = player_pos and Vector3.distance(emitter_pos, player_pos) or nil
+				local ramp_occluded = mod.occlusion.fraction(unit)
 				local constant = params.constant
 
 				if constant and d <= constant.distance then
@@ -415,7 +442,7 @@ function CuePlayer.update(dt)
 								audio_type = mod.settings.audio_type(),
 								volume = cue_volume(cue),
 								loop = true,
-								filters = pitch_filter(cue, listener_distance),
+								filters = distance_filter(cue, ramp_distance, ramp_occluded),
 							},
 							unit, DECAY, cue_min_distance(cue), cue_max_distance(cue)
 						)
@@ -439,8 +466,8 @@ function CuePlayer.update(dt)
 								path,
 								{
 									audio_type = mod.settings.audio_type(),
-									volume = cue_volume(cue),
-									filters = pitch_filter(cue, listener_distance),
+									volume = cue_volume(cue) * occlusion_volume(ramp_occluded),
+									filters = distance_filter(cue, ramp_distance, ramp_occluded),
 								},
 								unit, DECAY, cue_min_distance(cue), cue_max_distance(cue)
 							)

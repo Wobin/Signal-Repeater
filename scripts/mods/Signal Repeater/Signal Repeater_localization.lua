@@ -7,7 +7,7 @@ return {
 	repeat_all = { en = "Repeat every cue below (ticks/unticks all)" },
 	mute_all = { en = "Silence the game's own cue for all of them (ticks/unticks all)" },
 	volume = { en = "Volume of our cues (100 = as loud as the game's own)" },
-	audible_range = { en = "How far away our cues can still be heard (m)" },
+	audible_range = { en = "Audible range, as a percentage of the game's own range per cue (100 = the same)" },
 	sound_test = { en = "Sound test: loop a hound bark circling you, to set volume" },
 	isolate_cues = { en = "Independent volume: ignore the game's audio sliders entirely (only the Volume above applies)" },
 	debug = { en = "Debug: print each cue to chat as it fires" },

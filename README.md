@@ -50,6 +50,20 @@ Surfaces for which the game defines no footstep audio are left silent rather tha
 Footstep timing is not modelled. Footsteps are triggered from the animation, so the replay is driven
 by the game's own event and remains synchronised with the gait.
 
+## Distance and occlusion
+
+Darktide conveys distance to a sound almost entirely through progressive low-pass filtering rather
+than volume attenuation. Its attenuation curves hold volume nearly flat (0 dB at the listener to
+-1 dB at 60 m) while ramping the low-pass from 0 to 45 over the same span. Signal Repeater reads each
+cue's own attenuation curve from the soundbank and reproduces both the radius and the filter, so a
+distant enemy is dull rather than merely quieter.
+
+Cues are also occluded by level geometry. Five rays are cast from the listener to a fan around the
+emitter using the game's line-of-sight collision filter; the blocked fraction adds further low-pass
+attenuation and reduces volume, so an enemy behind a wall is muffled rather than heard through it.
+This is an approximation: the game's own occlusion uses authored portal volumes and obstructor units,
+which are not exposed to mods.
+
 ## Poxburster cadence
 
 The Poxburster tick is an internal Wwise loop with no per-tick event, so its cadence is reconstructed
@@ -67,7 +81,7 @@ own version is silenced (replacement rather than reinforcement). Bulk toggles ar
 |---|---|
 | Volume | 100 corresponds to the level of the game's own version of the sound |
 | Independent volume | Replayed cues ignore the SFX, Music and Dialogue sliders. The Master slider still applies |
-| Audible range | Maximum distance at which replayed cues remain audible |
+| Audible range | Scales every cue's range as a percentage of the range the game itself uses (100 = the same) |
 | Sound test | Loops a sample orbiting the player for volume calibration |
 | Debug | Prints each cue to chat as it fires |
 
