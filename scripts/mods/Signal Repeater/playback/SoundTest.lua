@@ -25,6 +25,7 @@ local ORBIT_HEIGHT = 1.2    -- roughly ear height above the player's feet
 local MOVE_THROTTLE = 0.05
 
 local TEST_PATTERN = "mods/Signal Repeater/audio/cues/hound_approach/*.ogg"
+local TEST_MAX_DISTANCE = 35
 
 local active = false
 local play_id = nil
@@ -67,8 +68,8 @@ local function start_playback()
 
 	play_id = mod.simple_audio.play_file(
 		path,
-		{ audio_type = "sfx", volume = mod.settings.volume(), loop = true },
-		orbit_position(unit), nil, nil, mod.settings.max_distance()
+		{ audio_type = mod.settings.audio_type(), volume = mod.settings.volume(), loop = true },
+		orbit_position(unit), mod.cue_player.DECAY, mod.cue_player.MIN_DISTANCE, TEST_MAX_DISTANCE
 	)
 	if not play_id then return end
 end
@@ -121,7 +122,7 @@ function SoundTest.update(dt)
 	throttle = throttle + dt
 	if throttle >= MOVE_THROTTLE then
 		throttle = 0
-		mod.simple_audio.set_position(play_id, orbit_position(unit), nil, nil, mod.settings.max_distance())
+		mod.simple_audio.set_position(play_id, orbit_position(unit), mod.cue_player.DECAY, mod.cue_player.MIN_DISTANCE, TEST_MAX_DISTANCE)
 	end
 end
 

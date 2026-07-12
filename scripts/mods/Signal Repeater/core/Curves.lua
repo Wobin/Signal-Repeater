@@ -38,13 +38,6 @@ function Curves.piecewise(points, distance)
 	return points[n][2]
 end
 
-function Curves.blend_weight(blend, distance)
-	local span = blend.far_start - blend.near_end
-	local t = span > 0 and (distance - blend.near_end) / span or 0
-	if t < 0 then return 0 elseif t > 1 then return 1 end
-	return t
-end
-
 function Curves.pitch_rate(cents)
 	local rate = 2 ^ (cents / 1200)
 	return math_floor(rate * 100 + 0.5) / 100

@@ -63,10 +63,4 @@ close(Curves.pitch_rate(400), 1.26, 0.005, "+400 cents (burster at 0m)")
 close(Curves.pitch_rate(-200), 0.89, 0.005, "-200 cents (burster at 50m)")
 assert(Curves.pitch_filter_string(1.26) == "asetrate=48000*1.26,aresample=48000", "filter string shape")
 
--- Near/far layer crossfade weights, from the bank's blend curves.
-local BLEND = { near_end = 9.88, far_start = 35.12 }
-assert(Curves.blend_weight(BLEND, 5) == 0, "all near layer inside the band")
-assert(Curves.blend_weight(BLEND, 100) == 1, "all far layer beyond the band")
-close(Curves.blend_weight(BLEND, 22.5), 0.5, 0.01, "half and half mid-band")
-
 print("test_curves OK")

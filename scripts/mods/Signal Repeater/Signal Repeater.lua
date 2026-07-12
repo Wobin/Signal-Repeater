@@ -1,7 +1,7 @@
 --[[
 	Name: Signal Repeater
 	Author: Wobin
-	Date: 10/07/2026
+	Date: 12/07/2026
 	Version: 1.0.0
 	Repository: https://github.com/Wobin/Signal-Repeater
 ]]--
@@ -9,15 +9,40 @@
 local mod = get_mod("Signal Repeater")
 mod.version = "1.0.0"
 
-mod.settings = mod:io_dofile("Signal Repeater/scripts/mods/Signal Repeater/core/Settings")
-mod.cue_debug = mod:io_dofile("Signal Repeater/scripts/mods/Signal Repeater/core/Debug")
-mod.curves = mod:io_dofile("Signal Repeater/scripts/mods/Signal Repeater/core/Curves")
-mod.catalog = mod:io_dofile("Signal Repeater/scripts/mods/Signal Repeater/cues/CueCatalog")
-mod.cue_player = mod:io_dofile("Signal Repeater/scripts/mods/Signal Repeater/playback/CuePlayer")
-mod.sound_test = mod:io_dofile("Signal Repeater/scripts/mods/Signal Repeater/playback/SoundTest")
-mod.source_registry = mod:io_dofile("Signal Repeater/scripts/mods/Signal Repeater/playback/SourceRegistry")
+local ROOT = "Signal Repeater/scripts/mods/Signal Repeater/"
+
+mod.settings = mod:io_dofile(ROOT .. "core/Settings")
+mod.cue_debug = mod:io_dofile(ROOT .. "core/Debug")
+mod.curves = mod:io_dofile(ROOT .. "core/Curves")
+mod.units = mod:io_dofile(ROOT .. "core/Units")
+mod.footstep_surfaces = mod:io_dofile(ROOT .. "cues/FootstepSurfaces")
+mod.catalog = mod:io_dofile(ROOT .. "cues/CueCatalog")
+mod.cue_player = mod:io_dofile(ROOT .. "playback/CuePlayer")
+mod.sound_test = mod:io_dofile(ROOT .. "playback/SoundTest")
+mod.source_registry = mod:io_dofile(ROOT .. "playback/SourceRegistry")
+
+local was_active = false
+
+local function teardown()
+	mod.cue_player.stop_all()
+	if mod.sound_test.is_active() then
+		mod.sound_test.stop()
+	end
+end
 
 mod.update = function(dt)
+	local active = mod.settings.active()
+
+	if not active then
+		if was_active then
+			was_active = false
+			teardown()
+		end
+		return
+	end
+
+	was_active = true
+
 	mod.cue_player.update(dt)
 	mod.sound_test.update(dt)
 	mod.source_registry.update(dt)
@@ -32,13 +57,18 @@ mod.on_all_mods_loaded = function()
 	mod:info(mod.version)
 	mod.settings.refresh()
 
+	mod.hook_registry = mod:io_dofile(ROOT .. "cues/HookRegistry")
+
 	mod.source_registry.install()
 
-	mod.cue_hooks = mod:io_dofile("Signal Repeater/scripts/mods/Signal Repeater/cues/CueHooks")
+	mod.cue_hooks = mod:io_dofile(ROOT .. "cues/CueHooks")
 	mod.cue_hooks.install()
 
-	mod.suppression = mod:io_dofile("Signal Repeater/scripts/mods/Signal Repeater/cues/Suppression")
+	mod.suppression = mod:io_dofile(ROOT .. "cues/Suppression")
 	mod.suppression.install()
+
+	mod.vo_cues = mod:io_dofile(ROOT .. "cues/VoCues")
+	mod.vo_cues.install()
 
 	mod:set("sound_test", false)
 	mod.settings.refresh()
@@ -46,7 +76,14 @@ mod.on_all_mods_loaded = function()
 	mod:command("sr_test", mod:localize("sr_test"), function()
 		mod:set("sound_test", not mod.sound_test.is_active(), true)
 	end)
+end
 
+mod.on_disabled = function()
+	teardown()
+end
+
+mod.on_unload = function()
+	teardown()
 end
 
 local function set_every_cue(suffix, value)

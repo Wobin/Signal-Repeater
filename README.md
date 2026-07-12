@@ -16,16 +16,24 @@ made it, so it still tells you where the threat is.
 | Enemy | Cue |
 |---|---|
 | Sniper | aim beam |
-| Plasma Gunner | charge-up |
+| Plasma Gunner | charge-up (both layers: the charge tone *and* its overlay) |
 | Mutant | charge growl |
 | Chaos Hound | approach bark |
 | Flamer | proximity warning |
 | Trapper | net-gun wind-up |
 | Poxburster | ticking |
 | Daemonhost | alert scream |
+| **Crusher** | overhead-smash roar, melee roar, hammer swing |
+| **Reaper** | readying the gun, melee roar, sustained heavy stubber |
+| **Crusher (voice)** | spots you, charging you |
+| **Reaper (voice)** | spots you, opening fire |
+
+The voice callouts replay **the exact line the game chose**, not a random one — the mod reads the
+line's key out of the dialogue system as it fires.
 
 Each enemy has its own group in the mod options, with two toggles: **repeat the cue**, and
-**silence the game's own version** (so ours replaces it rather than doubling it).
+**silence the game's own version** (so ours replaces it rather than doubling it). Two switches at
+the top tick or untick all of them at once.
 
 ## Faithful, not approximate
 

@@ -38,6 +38,9 @@ local MIN_DISTANCE = 5
 
 local DECAY = 0
 
+CuePlayer.MIN_DISTANCE = MIN_DISTANCE
+CuePlayer.DECAY = DECAY
+
 local function cue_volume(cue)
 	return mod.settings.volume() * (cue.gain or 1)
 end
@@ -50,29 +53,12 @@ local function cue_min_distance(cue)
 	return cue.min_distance or MIN_DISTANCE
 end
 
-local function unit_alive(unit)
-	if not unit or not Unit.alive(unit) then
-		return false
-	end
+local unit_alive = mod.units.alive
 
-	local ok, health_extension = pcall(ScriptUnit.has_extension, unit, "health_system")
-	if ok and health_extension and health_extension.is_alive and not health_extension:is_alive() then
-		return false
-	end
-
-	return true
-end
-
-local function resolve_audio(cue, audio_override, cache_key)
-	local audio = audio_override or cue.audio
-	if audio.kind == "file" then
-		return audio.path
-	end
-
-	local key = cache_key or cue.key
+local function glob_list(pattern, key)
 	local list = glob_cache[key]
 	if not list then
-		local ok, result = pcall(mod.simple_audio.glob, audio.pattern)
+		local ok, result = pcall(mod.simple_audio.glob, pattern)
 		if ok and result then
 			list = result:list()
 		else
@@ -80,7 +66,73 @@ local function resolve_audio(cue, audio_override, cache_key)
 		end
 		glob_cache[key] = list
 	end
+	return list
+end
 
+local function minion_speed(unit)
+	local ok, locomotion = pcall(ScriptUnit.has_extension, unit, "locomotion_system")
+	if not ok or not locomotion then
+		return 0
+	end
+	local got, velocity = pcall(function() return locomotion:current_velocity() end)
+	if not got or not velocity then
+		return 0
+	end
+	return Vector3.length(velocity)
+end
+
+local function minion_gait(unit, gaits)
+	local speed = minion_speed(unit)
+	for i = 1, #gaits do
+		if speed >= gaits[i][2] then
+			return gaits[i][1]
+		end
+	end
+	return gaits[#gaits][1]
+end
+
+local function resolve_surface(cue, audio, unit)
+	local surfaces = mod.footstep_surfaces[audio.surfaces]
+	if not surfaces then
+		return nil
+	end
+
+	local ok, material = pcall(Unit.get_data, unit, "cache_material")
+	if not ok then
+		material = nil
+	end
+
+	if material and surfaces.silent[material] then
+		return nil
+	end
+
+	local gait = minion_gait(unit, audio.gaits)
+	local for_gait = surfaces[gait]
+	local set = for_gait[material or "concrete"] or for_gait.concrete
+	if not set then
+		return nil
+	end
+
+	local key = cue.key .. "|" .. gait .. "|" .. set
+	local list = glob_list(audio.base .. "/" .. gait .. "/" .. set .. "/*.ogg", key)
+	local n = #list
+	if n == 0 then
+		return nil
+	end
+	return list[math_random(n)]
+end
+
+local function resolve_audio(cue, audio_override, cache_key, unit)
+	local audio = audio_override or cue.audio
+	if audio.kind == "file" then
+		return audio.path
+	end
+
+	if audio.kind == "surface" then
+		return resolve_surface(cue, audio, unit)
+	end
+
+	local list = glob_list(audio.pattern, cache_key or cue.key)
 	local n = #list
 	if n == 0 then
 		return nil
@@ -96,26 +148,13 @@ local function ramp_interval(params, distance)
 	return Curves.interval_at(params.curve, distance)
 end
 
-local function resolve_layered(cue, listener_distance)
-	local blend = cue.layer_blend
-	if not blend or not cue.far_audio or not listener_distance then
-		return resolve_audio(cue)
-	end
-
-	local t = Curves.blend_weight(blend, listener_distance)
-
-	if math_random() < t then
-		return resolve_audio(cue, cue.far_audio, cue.key .. "|far")
-	end
-	return resolve_audio(cue)
-end
-
 local function pitch_filter(cue, distance)
-	if not cue.pitch_cents or not distance then
+	local points = cue.ramp and cue.ramp.pitch_cents
+	if not points or not distance then
 		return cue.filters
 	end
 
-	local cents = Curves.piecewise(cue.pitch_cents, distance)
+	local cents = Curves.piecewise(points, distance)
 	return Curves.pitch_filter_string(Curves.pitch_rate(cents))
 end
 
@@ -186,9 +225,22 @@ local function stop_entry(entry)
 end
 
 local overlap_seq = 0
+local clock = 0
+local prune_clock = 0
+local last_played = {}
 
-function CuePlayer.play(cue, unit)
+local PRUNE_INTERVAL = 10
+local PRUNE_AGE = 30
+
+function CuePlayer.play(cue, unit, explicit_path)
 	if not unit_alive(unit) then return end
+
+	if cue.min_interval then
+		local rate_key = cue.key .. "|" .. tostring(unit)
+		local last = last_played[rate_key]
+		if last and clock - last < cue.min_interval then return end
+		last_played[rate_key] = clock
+	end
 
 	local key
 	if cue.overlap then
@@ -199,17 +251,17 @@ function CuePlayer.play(cue, unit)
 		if active[key] then return end
 	end
 
-	local layers = cue.layers or { cue.audio }
+	local layers = explicit_path and { false } or (cue.layers or { cue.audio })
 	local entry = { unit = unit, cue = cue, elapsed = 0, throttle = 0, play_ids = {} }
 	local first_path
 
 	for i = 1, #layers do
-		local path = resolve_audio(cue, layers[i], cue.key .. "|L" .. i)
+		local path = explicit_path or resolve_audio(cue, layers[i], cue.key .. "|L" .. i, unit)
 		if path then
 			first_path = first_path or path
 
 			local settings = {
-				audio_type = "sfx",
+				audio_type = mod.settings.audio_type(),
 				volume = cue_volume(cue),
 				loop = cue.mode == "loop" or nil,
 				filters = cue.filters,
@@ -292,23 +344,29 @@ function CuePlayer.stop_unit(cue, unit)
 	end
 end
 
-function CuePlayer.stop_cue(cue_key)
+function CuePlayer.stop_all()
 	for key, entry in pairs(active) do
-		if entry.cue.key == cue_key then
-			stop_entry(entry)
-			active[key] = nil
-		end
+		stop_entry(entry)
+		active[key] = nil
 	end
 	for key, ramp in pairs(ramps) do
-		if ramp.cue.key == cue_key then
-			stop_ramp_sounds(ramp)
-			ramps[key] = nil
-		end
+		stop_ramp_sounds(ramp)
+		ramps[key] = nil
 	end
 end
 
 function CuePlayer.update(dt)
-	local enabled = mod.settings.enabled()
+	local enabled = mod.settings.active()
+
+	clock = clock + dt
+	if clock - prune_clock >= PRUNE_INTERVAL then
+		prune_clock = clock
+		for rate_key, when in pairs(last_played) do
+			if clock - when > PRUNE_AGE then
+				last_played[rate_key] = nil
+			end
+		end
+	end
 
 	for key, entry in pairs(active) do
 		entry.elapsed = entry.elapsed + dt
@@ -362,7 +420,7 @@ function CuePlayer.update(dt)
 						ramp.constant_id = mod.simple_audio.play_file(
 							constant.path,
 							{
-								audio_type = "sfx",
+								audio_type = mod.settings.audio_type(),
 								volume = cue_volume(cue),
 								loop = true,
 								filters = pitch_filter(cue, listener_distance),
@@ -383,12 +441,12 @@ function CuePlayer.update(dt)
 					ramp.timer = ramp.timer + dt
 					if ramp.timer >= ramp_interval(params, d) then
 						ramp.timer = 0
-						local path = resolve_layered(cue, listener_distance)
+						local path = resolve_audio(cue)
 						if path then
 							local tick_id = mod.simple_audio.play_file(
 								path,
 								{
-									audio_type = "sfx",
+									audio_type = mod.settings.audio_type(),
 									volume = cue_volume(cue),
 									filters = pitch_filter(cue, listener_distance),
 								},

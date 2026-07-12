@@ -32,6 +32,16 @@ function Debug.stopped(cue, reason)
 	mod:echo(string_format("[SR] %s stopped (%s)", cue.key, reason))
 end
 
+function Debug.bark(sound_event, cue)
+	if not mod.settings.debug() then return end
+	if cue then
+		local mode = mod.settings.suppress(cue.setting_id) and "replace" or "supplement"
+		mod:echo(string_format("[SR] bark %s -> %s (%s)", sound_event, cue.key, mode))
+	else
+		mod:echo(string_format("[SR] bark %s (no cue)", sound_event))
+	end
+end
+
 function Debug.suppressed(cue, event_name)
 	if not mod.settings.debug() then return end
 	mod:echo(string_format("[SR] muted original %s (%s)", event_name, cue.key))
