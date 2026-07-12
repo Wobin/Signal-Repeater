@@ -1,88 +1,81 @@
 # Signal Repeater
 
-A Darktide mod that makes sure you actually **hear** the telegraph.
+Signal Repeater re-plays special and elite enemy telegraph cues so that they remain audible during
+combat.
 
-The game already tells you a Poxburster is ticking, a Trapper is lining up, or a Hound is about to
-pounce. The problem is Wwise: in a loud fight, its mixer ducks and buries those cues under gunfire
-and horde noise, exactly when you need them most.
+Darktide's Wwise mixer applies ducking and attenuation under load, which can suppress enemy telegraph
+audio at the moments it is most relevant. Signal Repeater intercepts each cue as the game triggers it
+and replays the game's own extracted audio through
+[SimpleAudio](https://www.nexusmods.com/warhammer40kdarktide/mods/864), which operates on a separate
+runtime outside Wwise and is therefore unaffected by the mixer. The replayed cue is positioned in 3D
+at the emitting enemy.
 
-Signal Repeater catches each cue as the game fires it and replays the game's **own sound** through
-[SimpleAudio](https://www.nexusmods.com/warhammer40kdarktide/mods/864), which runs on its own audio
-runtime *outside* Wwise, so it cannot be ducked. The copy is positioned in 3D at the enemy that made
-it, so it still tells you where the threat is.
-
-Client-side only. Nothing is sent to the host; it changes only what you hear.
+The mod is client-side only. No data is transmitted to the host and no game state is modified.
 
 ## Cues
 
-49 cues across 13 enemies. The disablers come first, because they are the ones that kill you.
+49 cues across 13 enemies.
 
 | Enemy | Cues |
 |---|---|
-| **Trapper** | net-gun wind-up, aim broken off, reload, stalking you, footsteps, laugh |
-| **Chaos Hound** | **pounce**, bark, growl, footsteps |
-| **Mutant** | charge growl, charging breath, charging rattle, footsteps |
-| **Poxburster** | ticking, footsteps |
-| **Flamer** | fuel tank, taking aim, proximity warning, flame stream, footsteps (Dreg and Scab) |
+| Trapper | net-gun wind-up, aim interrupted, reload, proximity warning, footsteps, laugh |
+| Chaos Hound | pounce, bark, growl, footsteps |
+| Mutant | charge growl, charging breath, charging rattle, footsteps |
+| Poxburster | ticking, footsteps |
+| Flamer | fuel tank, taking aim, proximity warning, flame stream, footsteps (Dreg and Scab) |
 | Bomber | footsteps |
 | Sniper | aim beam, footsteps |
-| Plasma Gunner | charge-up (both layers: the charge tone *and* its overlay) |
+| Plasma Gunner | charge-up (charge tone and overlay) |
 | Daemonhost | alert scream |
-| **Reaper** | callouts (spots you / opening fire), readying gun, heavy stubber, melee, footsteps |
-| **Crusher** | callouts (spots you / charging you), overhead smash, hammer swing, melee, footsteps |
-| **Bulwark** | readying up, overhead smash, shield swing, melee, footsteps |
-| **Mauler** | overhead smash, chainaxe swing, melee, footsteps |
+| Reaper | callouts (alerted, opening fire), readying gun, heavy stubber, melee, footsteps |
+| Crusher | callouts (alerted, assault), overhead smash, hammer swing, melee, footsteps |
+| Bulwark | readying, overhead smash, shield swing, melee, footsteps |
+| Mauler | overhead smash, chainaxe swing, melee, footsteps |
 
-The voice callouts replay **the exact line the game chose**, not a random one: the mod reads the
-line's key out of the dialogue system as it fires.
+Voice callouts replay the specific line selected by the game. The mod reads the dialogue key from the
+dialogue system at the point of playback rather than selecting a line at random.
 
-Cue selection is not guesswork. Darktide's breed data marks certain sounds `use_proximity_culling =
-false`, which is the game itself saying *this must always be heard*. Those are the cues here.
+Cue selection is derived from the game's own breed data. Sounds marked `use_proximity_culling = false`
+are exempted by Fatshark from distance culling; those sounds form the basis of this cue set.
 
-## Footsteps tell you where it is
+## Footsteps
 
-A telegraph tells you a Trapper exists. Its **footsteps** tell you where it is walking, which is the
-information the mix is really stealing from you.
+Footstep audio conveys enemy position and movement, which telegraph cues alone do not.
 
-The game picks footstep audio through a Wwise switch on the **surface material** under the enemy, and
-Signal Repeater mirrors that switch: it reads the same material the game just used and plays from the
-matching set, so a Trapper crossing from concrete onto metal grating sounds like it. It also honours
-the surfaces the game deliberately leaves **silent** (snow, warp shields) rather than inventing a
-footstep the game never plays.
+Darktide selects footstep audio through a Wwise switch keyed on the surface material beneath the
+enemy. Signal Repeater mirrors this switch: it reads the material the game resolved for that footstep
+and plays from the corresponding sample set, so surface changes are reflected in the replayed audio.
+Surfaces for which the game defines no footstep audio are left silent rather than substituted.
 
-Timing is mirrored, not modelled: footsteps are fired from the animation, so the replay is driven by
-the game's own event and is always in step with the gait.
+Footstep timing is not modelled. Footsteps are triggered from the animation, so the replay is driven
+by the game's own event and remains synchronised with the gait.
 
-## Faithful, not approximate
+## Poxburster cadence
 
-The audio is extracted from the game's own soundbanks, and so is its *behaviour*. The Poxburster's
-tick cadence follows the curve the bank actually specifies (0.03s at contact, rising to 1.5s at 50m),
-keyed on the distance to the burster's **target**, which may be a team-mate rather than you. Up close,
-where the ticks fuse into one tone, playback hands off to a single pre-rendered loop rather than
-firing a decode eleven times a second.
-
-Where the bank data turned out not to match what the game actually sounds like, it was dropped rather
-than shipped for the sake of looking thorough.
+The Poxburster tick is an internal Wwise loop with no per-tick event, so its cadence is reconstructed
+from the soundbank. The tick interval follows the curve defined in the bank (0.03s at contact, rising
+to 1.5s at 50m) and is keyed on the distance between the Poxburster and its current target, which may
+be a team-mate rather than the local player. At close range, where individual ticks converge into a
+continuous tone, playback switches to a single pre-rendered loop.
 
 ## Options
 
-Each enemy has its own group, and every cue has two toggles: **repeat the cue**, and **silence the
-game's own version** (so ours replaces it rather than doubling it). Switches at the top tick or untick
-everything at once.
+Cues are grouped by enemy. Each cue has two settings: whether it is repeated, and whether the game's
+own version is silenced (replacement rather than reinforcement). Bulk toggles are provided.
 
-- **Volume** — 100 means as loud as the game's own version of that sound
-- **Independent volume** — the cues ignore the game's SFX/Music/Dialogue sliders entirely, so you can
-  duck the combat mix right down and still hear every telegraph. Master still applies, so muting the
-  game still mutes.
-- **Audible range** for the replayed cues
-- **Sound test** — loops a bark circling you, so you can set the volume without a fight
-- **Debug** — prints each cue to chat as it fires
+| Setting | Description |
+|---|---|
+| Volume | 100 corresponds to the level of the game's own version of the sound |
+| Independent volume | Replayed cues ignore the SFX, Music and Dialogue sliders. The Master slider still applies |
+| Audible range | Maximum distance at which replayed cues remain audible |
+| Sound test | Loops a sample orbiting the player for volume calibration |
+| Debug | Prints each cue to chat as it fires |
 
-## Requires
+## Requirements
 
 - [Darktide Mod Framework](https://www.nexusmods.com/warhammer40kdarktide/mods/8)
 - [SimpleAudio](https://www.nexusmods.com/warhammer40kdarktide/mods/864)
 
 ## Credits
 
-Sound assets are extracted from Warhammer 40,000: Darktide and belong to Fatshark.
+Sound assets are extracted from Warhammer 40,000: Darktide and remain the property of Fatshark.
