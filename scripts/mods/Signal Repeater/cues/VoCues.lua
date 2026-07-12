@@ -1,8 +1,8 @@
 --[[
 	Name: Signal Repeater
 	Author: Wobin
-	Date: 12/07/2026
-	Version: 1.0.0
+	Date: 13/07/2026
+	Version: 2.0.0
 	Repository: https://github.com/Wobin/Signal-Repeater
 ]]--
 

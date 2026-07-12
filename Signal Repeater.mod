@@ -8,5 +8,11 @@ return {
 			mod_localization = "Signal Repeater/scripts/mods/Signal Repeater/Signal Repeater_localization",
 		})
 	end,
+	load_after = {
+		"SimpleAudio",
+	},
+	require = {
+		"SimpleAudio",
+	},
 	packages = {},
 }
