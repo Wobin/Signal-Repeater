@@ -1,11 +1,3 @@
---[[
-	Name: Signal Repeater
-	Author: Wobin
-	Date: 13/07/2026
-	Version: 2.0.0
-	Repository: https://github.com/Wobin/Signal-Repeater
-]]--
-
 local mod = get_mod("Signal Repeater")
 local CueCatalog = mod.catalog
 local Debug = mod.cue_debug
