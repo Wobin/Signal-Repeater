@@ -79,7 +79,7 @@ own version is silenced (replacement rather than reinforcement). Bulk toggles ar
 
 | Setting | Description |
 |---|---|
-| Volume | 100 corresponds to the level of the game's own version of the sound |
+| Volume | 100 is slightly louder than the game's own version of the sound, so the replay stands out; higher and lower values scale from there |
 | Independent volume | Replayed cues ignore the SFX, Music and Dialogue sliders. The Master slider still applies |
 | Audible range | Scales every cue's range as a percentage of the range the game itself uses (100 = the same) |
 | Sound test | Loops a sample orbiting the player for volume calibration |

@@ -33,8 +33,10 @@ local DECAY = 0
 CuePlayer.MIN_DISTANCE = MIN_DISTANCE
 CuePlayer.DECAY = DECAY
 
+local VOLUME_BOOST = 10
+
 local function cue_volume(cue)
-	return mod.settings.volume() * (cue.gain or 1)
+	return (mod.settings.volume() + VOLUME_BOOST) * (cue.gain or 1)
 end
 
 local DEFAULT_RANGE = 60

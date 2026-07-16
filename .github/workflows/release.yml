@@ -18,6 +18,23 @@ jobs:
       - name: Set version
         run: echo "VERSION=${{ github.event.release.tag_name || inputs.version }}" >> "$GITHUB_ENV"
 
+      - name: Verify every cue decodes to audio
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          find audio -name '*.ogg' -print0 \
+            | xargs -0 -P "$(nproc)" -I{} sh -c '
+                bytes=$(ffmpeg -v error -i "$1" -f wav - 2>/dev/null | wc -c)
+                [ "$bytes" -lt 1000 ] && printf "%s\n" "$1"
+                exit 0
+              ' _ {} > empty-oggs.txt
+          total=$(find audio -name '*.ogg' | wc -l)
+          if [ -s empty-oggs.txt ]; then
+            echo "::error::$(wc -l < empty-oggs.txt) of $total ogg files decode to no audio"
+            cat empty-oggs.txt
+            exit 1
+          fi
+          echo "All $total ogg files contain audio."
+
       - name: Package (no git artefacts)
         run: |
           git archive --format=zip --prefix="Signal Repeater/" \

@@ -3,8 +3,8 @@ local mod = get_mod("Signal Repeater")
 local function breed_group(id, cues)
 	local sub_widgets = {}
 	for _, cue in ipairs(cues) do
-		sub_widgets[#sub_widgets + 1] = { setting_id = cue .. "_enabled", type = "checkbox", default_value = true }
-		sub_widgets[#sub_widgets + 1] = { setting_id = cue .. "_suppress", type = "checkbox", default_value = false }
+		sub_widgets[#sub_widgets + 1] = { setting_id = cue .. "_enabled", type = "checkbox", default_value = true, tooltip = "cue_enabled_tooltip" }
+		sub_widgets[#sub_widgets + 1] = { setting_id = cue .. "_suppress", type = "checkbox", default_value = false, tooltip = "cue_suppress_tooltip" }
 	end
 	return { setting_id = id, type = "group", sub_widgets = sub_widgets }
 end
