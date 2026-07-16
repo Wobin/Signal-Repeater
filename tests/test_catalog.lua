@@ -37,7 +37,7 @@ local function glob_count(pattern)
 	return #glob_names(pattern:match("^(.*)/[^/]*$"))
 end
 
-assert(#Catalog == 49, "expected 49 cues, got " .. #Catalog)
+assert(#Catalog == 50, "expected 50 cues, got " .. #Catalog)
 
 local seen_keys = {}
 for _, cue in ipairs(Catalog) do
@@ -168,7 +168,25 @@ for _, cue in ipairs(Catalog) do
 	else
 		assert(cue.ramp == nil, key .. ": non-ramped cue carries a ramp table")
 	end
+
+	if cue.crowd_gain then
+		assert(type(cue.crowd_gain.over) == "number" and cue.crowd_gain.over >= 1,
+			key .. ": crowd_gain.over must be a count of at least 1")
+		assert(type(cue.crowd_gain.gain) == "number" and cue.crowd_gain.gain > 0 and cue.crowd_gain.gain <= 1,
+			key .. ": crowd_gain.gain must be a reducing factor in (0, 1]")
+	end
 end
+
+-- Crowd dampening applies to charging specials only, and never to poxbursters.
+local crowd_cues, poxburster_crowd = {}, false
+for _, cue in ipairs(Catalog) do
+	if cue.crowd_gain then
+		crowd_cues[#crowd_cues + 1] = cue.key
+		if cue.key:find("poxburster", 1, true) then poxburster_crowd = true end
+	end
+end
+assert(not poxburster_crowd, "poxburster cues must not carry crowd_gain")
+assert(#crowd_cues == 4, "expected 4 crowd_gain cues (mutant charge/breath/rattle, hound leap), got " .. #crowd_cues)
 
 -- CueHooks dispatches effect_template / inventory / breed_spawn cues through single-slot lookup
 -- tables, so two cues claiming the same key means the second silently REPLACES the first. Shared
@@ -218,7 +236,7 @@ local GLOBALS = {
 	mute_all = true, sound_test = true, isolate_cues = true, debug = true,
 }
 
-local seen_widget, seen_global, n_groups = {}, {}, 0
+local seen_widget, seen_global, group_settings, n_groups = {}, {}, {}, 0
 for _, w in ipairs(Data.options.widgets) do
 	assert(w.type == "group", "top-level widget outside a group: " .. tostring(w.setting_id))
 	n_groups = n_groups + 1
@@ -228,15 +246,30 @@ for _, w in ipairs(Data.options.widgets) do
 	for _, sw in ipairs(w.sub_widgets) do
 		local id = sw.setting_id
 		assert(not seen_widget[id] and not seen_global[id], "duplicate widget: " .. id)
-		assert(Loc[id], "missing localization for widget " .. id)
 
 		if GLOBALS[id] then
+			assert(Loc[id], "missing localization for widget " .. id)
 			seen_global[id] = true
+		elseif id == w.setting_id .. "_volume" or id == w.setting_id .. "_teammate_skip" then
+			-- per-breed group setting: shares one localized title across all groups
+			assert(sw.title and Loc[sw.title],
+				w.setting_id .. ": group setting " .. id .. " has no shared title loc: " .. tostring(sw.title))
+			group_settings[id] = true
+			seen_widget[id] = true
 		else
+			assert(Loc[id], "missing localization for widget " .. id)
 			local cue_id = id:gsub("_enabled$", ""):gsub("_suppress$", "")
 			assert(real_cue[cue_id], w.setting_id .. ": widget for a cue that does not exist: " .. id)
 			seen_widget[id] = true
 		end
+	end
+end
+
+-- Every enemy group (all but grp_options) must carry both a volume slider and a teammate-quiet toggle.
+for _, w in ipairs(Data.options.widgets) do
+	if w.setting_id ~= "grp_options" then
+		assert(group_settings[w.setting_id .. "_volume"], w.setting_id .. ": missing per-breed volume slider")
+		assert(group_settings[w.setting_id .. "_teammate_skip"], w.setting_id .. ": missing per-breed teammate-skip toggle")
 	end
 end
 

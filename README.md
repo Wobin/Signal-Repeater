@@ -6,7 +6,7 @@ combat.
 Darktide's Wwise mixer applies ducking and attenuation under load, which can suppress enemy telegraph
 audio at the moments it is most relevant. Signal Repeater intercepts each cue as the game triggers it
 and replays the game's own extracted audio through
-[SimpleAudio](https://www.nexusmods.com/warhammer40kdarktide/mods/864), which operates on a separate
+[SimpleAudio](https://www.nexusmods.com/warhammer40kdarktide/mods/929), which operates on a separate
 runtime outside Wwise and is therefore unaffected by the mixer. The replayed cue is positioned in 3D
 at the emitting enemy.
 
@@ -14,7 +14,7 @@ The mod is client-side only. No data is transmitted to the host and no game stat
 
 ## Cues
 
-49 cues across 13 enemies.
+50 cues across 13 enemies.
 
 | Enemy | Cues |
 |---|---|
@@ -23,7 +23,7 @@ The mod is client-side only. No data is transmitted to the host and no game stat
 | Mutant | charge growl, charging breath, charging rattle, footsteps |
 | Poxburster | ticking, footsteps |
 | Flamer | fuel tank, taking aim, proximity warning, flame stream, footsteps (Dreg and Scab) |
-| Bomber | footsteps |
+| Bomber | grenade-throw callout, footsteps |
 | Sniper | aim beam, footsteps |
 | Plasma Gunner | charge-up (charge tone and overlay) |
 | Daemonhost | alert scream |
@@ -77,6 +77,15 @@ continuous tone, playback switches to a single pre-rendered loop.
 Cues are grouped by enemy. Each cue has two settings: whether it is repeated, and whether the game's
 own version is silenced (replacement rather than reinforcement). Bulk toggles are provided.
 
+Each enemy group additionally carries two settings of its own.
+
+| Per-enemy setting | Description |
+|---|---|
+| Volume | Scales every cue from that enemy. 100 leaves them at the overall Volume below; use it to balance one enemy against another |
+| Skip cues aimed at a team-mate | When that enemy is targeting a team-mate rather than the local player, its cues are not replayed at all. The enemy's target is read from the game, and the check is made before any audio work is done. Poxbursters default to off, since a Poxburster endangers everyone nearby |
+
+The mod-wide settings are as follows.
+
 | Setting | Description |
 |---|---|
 | Volume | 100 is slightly louder than the game's own version of the sound, so the replay stands out; higher and lower values scale from there |
@@ -88,7 +97,7 @@ own version is silenced (replacement rather than reinforcement). Bulk toggles ar
 ## Requirements
 
 - [Darktide Mod Framework](https://www.nexusmods.com/warhammer40kdarktide/mods/8)
-- [SimpleAudio](https://www.nexusmods.com/warhammer40kdarktide/mods/864)
+- [SimpleAudio](https://www.nexusmods.com/warhammer40kdarktide/mods/929)
 
 ## Credits
 

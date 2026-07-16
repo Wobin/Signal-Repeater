@@ -19,6 +19,10 @@ return {
 	sound_test_description = { en = "Loops a hound bark circling you, so you can set the volume." },
 	isolate_cues = { en = "Independent volume" },
 	isolate_cues_description = { en = "Replayed cues ignore the game's SFX, Music and Dialogue sliders, so only the Volume above applies to them. The Master slider still applies." },
+	teammate_skip = { en = "Skip cues aimed at a team-mate" },
+	teammate_skip_description = { en = "When this enemy is targeting a team-mate rather than you, its cues are not replayed at all, so only the threats coming for you are repeated." },
+	breed_volume = { en = "Volume" },
+	breed_volume_description = { en = "Scales the volume of every cue from this enemy. 100 leaves them at the mod's overall Volume; lower or raise to balance this enemy against the others." },
 	debug = { en = "Debug" },
 	debug_description = { en = "Prints each cue to chat as it fires." },
 	sr_test = { en = "Toggle the Signal Repeater sound test" },
@@ -86,6 +90,8 @@ return {
 	scab_flamer_footsteps_suppress = { en = "    ... and silence the original" },
 
 	grp_bomber = { en = "Bomber" },
+	bomber_throw_enabled = { en = "Callout: throwing a grenade" },
+	bomber_throw_suppress = { en = "    ... and silence the original" },
 	bomber_footsteps_enabled = { en = "Footsteps" },
 	bomber_footsteps_suppress = { en = "    ... and silence the original" },
 

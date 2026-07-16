@@ -36,7 +36,18 @@ CuePlayer.DECAY = DECAY
 local VOLUME_BOOST = 10
 
 local function cue_volume(cue)
-	return (mod.settings.volume() + VOLUME_BOOST) * (cue.gain or 1)
+	return (mod.settings.volume() + VOLUME_BOOST) * (cue.gain or 1) * mod.settings.group_volume(cue.setting_id)
+end
+
+local function alerted_scale(cue, unit)
+	if not cue.alerted_gain then return 1 end
+	local blackboards = BLACKBOARDS
+	local blackboard = blackboards and blackboards[unit]
+	local perception = blackboard and blackboard.perception
+	if perception and perception.aggro_state ~= "passive" then
+		return cue.alerted_gain
+	end
+	return 1
 end
 
 local DEFAULT_RANGE = 60
@@ -250,8 +261,67 @@ local last_played = {}
 local PRUNE_INTERVAL = 10
 local PRUNE_AGE = 30
 
+local CROWD_TTL = 0.5
+local crowd_counts = {}
+
+local function breed_population(breed)
+	local cached = crowd_counts[breed]
+	if cached and clock - cached.at < CROWD_TTL then
+		return cached.count
+	end
+
+	local count = 0
+	local side_system = Managers.state and Managers.state.side
+	local pm = Managers.player
+	if side_system and pm then
+		local player = pm:local_player_safe(1)
+		local player_unit = player and player.player_unit
+		local side = player_unit and side_system.side_by_unit[player_unit]
+		if side then
+			local enemies = side:relation_units("enemy")
+			for i = 1, #enemies do
+				local other = enemies[i]
+				if unit_alive(other) and mod.units.breed_name(other) == breed then
+					count = count + 1
+				end
+			end
+		end
+	end
+
+	crowd_counts[breed] = { count = count, at = clock }
+	return count
+end
+
+local function crowd_scale(cue, unit)
+	local crowd = cue.crowd_gain
+	if not crowd then return 1 end
+	local breed = mod.units.breed_name(unit)
+	if not breed then return 1 end
+	if breed_population(breed) > crowd.over then
+		return crowd.gain
+	end
+	return 1
+end
+
+local function targets_teammate(unit)
+	local target = target_unit_of(unit)
+	if not target then return false end
+	local pm = Managers.player
+	if not pm then return false end
+	local local_player = pm:local_player_safe(1)
+	local local_unit = local_player and local_player.player_unit
+	if target == local_unit then return false end
+	return pm:player_by_unit(target) ~= nil
+end
+
+local function skip_for_teammate(cue, unit)
+	if not mod.settings.teammate_skip(cue.setting_id) then return false end
+	return targets_teammate(unit)
+end
+
 function CuePlayer.play(cue, unit, explicit_path)
 	if not unit_alive(unit) then return end
+	if skip_for_teammate(cue, unit) then return end
 
 	if cue.min_interval then
 		local rate_key = cue.key .. "|" .. tostring(unit)
@@ -282,7 +352,7 @@ function CuePlayer.play(cue, unit, explicit_path)
 
 			local settings = {
 				audio_type = mod.settings.audio_type(),
-				volume = cue_volume(cue) * occlusion_volume(play_occluded),
+				volume = cue_volume(cue) * occlusion_volume(play_occluded) * alerted_scale(cue, unit) * crowd_scale(cue, unit),
 				loop = cue.mode == "loop" or nil,
 				filters = distance_filter(cue, play_distance, play_occluded),
 			}
