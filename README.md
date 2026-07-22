@@ -77,12 +77,13 @@ continuous tone, playback switches to a single pre-rendered loop.
 Cues are grouped by enemy. Each cue has two settings: whether it is repeated, and whether the game's
 own version is silenced (replacement rather than reinforcement). Bulk toggles are provided.
 
-Each enemy group additionally carries two settings of its own.
+Each enemy group additionally carries settings of its own.
 
 | Per-enemy setting | Description |
 |---|---|
 | Volume | Scales every cue from that enemy. 100 leaves them at the overall Volume below; use it to balance one enemy against another |
 | Skip cues aimed at a team-mate | When that enemy is targeting a team-mate rather than the local player, its cues are not replayed at all. The enemy's target is read from the game, and the check is made before any audio work is done. Poxbursters default to off, since a Poxburster endangers everyone nearby |
+| Repeat only the closest | Chaos Hounds and Mutants only. When a pack is attacking the player, only the closest few are repeated and the remainder are not replayed at all. The limit covers every variant of that enemy together, so a limit of six applies across both the standard and armoured Hound rather than to each separately. Range 1 to 10, default 4 |
 
 The mod-wide settings are as follows.
 
