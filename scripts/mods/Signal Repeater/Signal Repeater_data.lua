@@ -40,6 +40,7 @@ return {
 					{ setting_id = "mute_all", type = "checkbox", default_value = false },
 					{ setting_id = "sound_test", type = "checkbox", default_value = false },
 					{ setting_id = "isolate_cues", type = "checkbox", default_value = false },
+					{ setting_id = "disable_in_psykhanium", type = "checkbox", default_value = true },
 					{ setting_id = "debug", type = "checkbox", default_value = false },
 				},
 			},

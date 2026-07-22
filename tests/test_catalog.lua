@@ -219,6 +219,7 @@ for _, cue in ipairs(Catalog) do real_cue[cue.setting_id] = true end
 local GLOBALS = {
 	enabled = true, volume = true, audible_range = true, repeat_all = true,
 	mute_all = true, sound_test = true, isolate_cues = true, debug = true,
+	disable_in_psykhanium = true,
 }
 
 local seen_widget, seen_global, group_settings, n_groups = {}, {}, {}, 0

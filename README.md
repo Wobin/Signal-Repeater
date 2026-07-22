@@ -91,6 +91,7 @@ The mod-wide settings are as follows.
 |---|---|
 | Volume | 100 is slightly louder than the game's own version of the sound, so the replay stands out; higher and lower values scale from there |
 | Independent volume | Replayed cues ignore the SFX, Music and Dialogue sliders. The Master slider still applies |
+| Turn off in the Psykhanium | No cues are repeated in the Psykhanium or the training grounds, and the game's own audio is left untouched. Enabled by default; the game disables enemy perception in those modes, which the targeting and pack settings read |
 | Audible range | Scales every cue's range as a percentage of the range the game itself uses (100 = the same) |
 | Sound test | Loops a sample orbiting the player for volume calibration |
 | Debug | Prints each cue to chat as it fires |

@@ -25,6 +25,7 @@ function Settings.refresh()
 	cache.debug        = get_bool("debug", false)
 	cache.sound_test   = get_bool("sound_test", false)
 	cache.isolate      = get_bool("isolate_cues", false)
+	cache.psykhanium_off = get_bool("disable_in_psykhanium", true)
 	cache.per_cue      = {}
 	cache.group_volume = {}
 	cache.group_teammate = {}
@@ -45,8 +46,34 @@ end
 
 function Settings.enabled()       return cache.enabled end
 
+local TRAINING_MODES = {
+	shooting_range = true,
+	training_grounds = true,
+}
+
+local seen_game_mode, seen_is_training
+
+local function in_training_ground()
+	local game_mode = Managers and Managers.state and Managers.state.game_mode
+	if not game_mode then
+		seen_game_mode, seen_is_training = nil, nil
+		return false
+	end
+
+	if game_mode ~= seen_game_mode then
+		seen_game_mode = game_mode
+		local ok, name = pcall(function() return game_mode:game_mode_name() end)
+		seen_is_training = (ok and TRAINING_MODES[name]) and true or false
+	end
+
+	return seen_is_training
+end
+
+Settings.in_training_ground = in_training_ground
+
 function Settings.active()
 	if not cache.enabled then return false end
+	if cache.psykhanium_off and in_training_ground() then return false end
 	local ok, on = pcall(function() return mod:is_enabled() end)
 	if ok and on == false then return false end
 	return true

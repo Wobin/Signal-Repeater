@@ -17,6 +17,8 @@ return {
 	mute_all_description = { en = "Ticks or unticks the silence checkbox on every cue below." },
 	sound_test = { en = "Sound test" },
 	sound_test_description = { en = "Loops a hound bark circling you, so you can set the volume." },
+	disable_in_psykhanium = { en = "Turn off in the Psykhanium" },
+	disable_in_psykhanium_description = { en = "No cues are repeated in the Psykhanium or the training grounds, leaving the game's own audio untouched while you test weapons. The game also switches off enemy perception there, which the targeting and pack settings rely on." },
 	isolate_cues = { en = "Independent volume" },
 	isolate_cues_description = { en = "Replayed cues ignore the game's SFX, Music and Dialogue sliders, so only the Volume above applies to them. The Master slider still applies." },
 	teammate_skip = { en = "Skip cues aimed at a team-mate" },

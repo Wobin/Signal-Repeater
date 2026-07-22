@@ -28,4 +28,29 @@ assert(Settings.enabled() == true, "master defaults on")
 assert(Settings.volume() == 100, "volume default 100")
 assert(Settings.range_scale() == 1, "range scale defaults to 1x (the game's own range)")
 assert(Settings.suppress("poxburster_beep") == false, "suppress defaults off (supplement)")
+
+-- The Psykhanium gate defaults ON, so the mod stays silent in the training modes. It is keyed on the
+-- game mode name, and must never fire in a real mission.
+fake_mod.is_enabled = function() return true end
+_G.Managers = { state = {} }
+Settings.refresh()
+assert(Settings.active() == true, "no game mode yet -> active")
+
+local function set_mode(name)
+	_G.Managers.state.game_mode = { game_mode_name = function() return name end }
+end
+
+set_mode("coop_complete_objective")
+assert(Settings.active() == true, "a real mission must stay active")
+set_mode("shooting_range")
+assert(Settings.active() == false, "Psykhanium (shooting_range) is gated off by default")
+set_mode("training_grounds")
+assert(Settings.active() == false, "training grounds is gated off by default")
+
+fake_values["disable_in_psykhanium"] = false
+Settings.refresh()
+set_mode("shooting_range")
+assert(Settings.active() == true, "gate off -> the mod runs in the Psykhanium")
+
+_G.Managers = nil
 print("test_settings OK")
