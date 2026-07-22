@@ -28,6 +28,7 @@ function Settings.refresh()
 	cache.per_cue      = {}
 	cache.group_volume = {}
 	cache.group_teammate = {}
+	cache.group_pack = {}
 end
 
 local function per_cue(setting_id)
@@ -65,6 +66,19 @@ function Settings.group_volume(cue_setting_id)
 	if v == nil then
 		v = get_number(key, 100) / 100
 		cache.group_volume[key] = v
+	end
+	return v
+end
+
+function Settings.pack_limit(cue_setting_id)
+	local group = mod.cue_group and mod.cue_group[cue_setting_id]
+	if not group then return nil end
+	if not (mod.group_pack and mod.group_pack[group]) then return nil end
+	local key = group .. "_pack_limit"
+	local v = cache.group_pack[key]
+	if v == nil then
+		v = get_number(key, 4)
+		cache.group_pack[key] = v
 	end
 	return v
 end

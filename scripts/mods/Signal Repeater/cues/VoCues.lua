@@ -11,6 +11,8 @@ local VoCues = {}
 
 local vo_cues = {}
 
+local replayed = {}
+
 local function match_cue(sound_event)
 	for _, cue in ipairs(vo_cues) do
 		if sound_event:find(cue.hook.loc_prefix, 1, true) == 1 then
@@ -46,12 +48,16 @@ function VoCues.install()
 			if not cue then return end
 			if not mod.settings.cue_enabled(cue.setting_id) then return end
 
-			CuePlayer.play(cue, unit, cue.audio.dir .. "/" .. sound_event .. ".ogg")
+			local played = CuePlayer.play(cue, unit, cue.audio.dir .. "/" .. sound_event .. ".ogg")
+			replayed[cue.setting_id] = played and true or nil
 		end)
 	end)
 
 	for _, cue in ipairs(vo_cues) do
 		mod.hook_registry.add("^" .. cue.hook.loc_prefix, function()
+			local played = replayed[cue.setting_id]
+			replayed[cue.setting_id] = nil
+			if not played then return end
 			if not mod.settings.active() then return end
 			if not mod.settings.cue_enabled(cue.setting_id) then return end
 			if mod.settings.suppress(cue.setting_id) then

@@ -1,13 +1,13 @@
 --[[
 	Name: Signal Repeater
 	Author: Wobin
-	Date: 16/07/2026
-	Version: 2.1.0
+	Date: 22/07/2026
+	Version: 2.2.0
 	Repository: https://github.com/Wobin/Signal-Repeater
 ]]--
 
 local mod = get_mod("Signal Repeater")
-mod.version = "2.1.0"
+mod.version = "2.2.0"
 
 local ROOT = "Signal Repeater/scripts/mods/Signal Repeater/"
 

@@ -21,6 +21,8 @@ return {
 	isolate_cues_description = { en = "Replayed cues ignore the game's SFX, Music and Dialogue sliders, so only the Volume above applies to them. The Master slider still applies." },
 	teammate_skip = { en = "Skip cues aimed at a team-mate" },
 	teammate_skip_description = { en = "When this enemy is targeting a team-mate rather than you, its cues are not replayed at all, so only the threats coming for you are repeated." },
+	pack_limit = { en = "Repeat only the closest" },
+	pack_limit_description = { en = "When a pack of this enemy is attacking you, only the closest few are repeated. The rest are not replayed at all, so a large pack does not stack into a wall of noise. Enemies going for a team-mate are governed by the setting above instead." },
 	breed_volume = { en = "Volume" },
 	breed_volume_description = { en = "Scales the volume of every cue from this enemy. 100 leaves them at the mod's overall Volume; lower or raise to balance this enemy against the others." },
 	debug = { en = "Debug" },

@@ -2,14 +2,19 @@ local mod = get_mod("Signal Repeater")
 
 mod.cue_group = {}
 mod.group_teammate_default = {}
+mod.group_pack = {}
 
-local function breed_group(id, cues, teammate_default)
+local function breed_group(id, cues, teammate_default, pack_cull)
 	local tq_default = teammate_default ~= false
 	mod.group_teammate_default[id] = tq_default
 	local sub_widgets = {
 		{ setting_id = id .. "_volume", type = "numeric", default_value = 100, range = { 0, 200 }, title = "breed_volume", tooltip = "breed_volume_description" },
 		{ setting_id = id .. "_teammate_skip", type = "checkbox", default_value = tq_default, title = "teammate_skip", tooltip = "teammate_skip_description" },
 	}
+	if pack_cull then
+		mod.group_pack[id] = true
+		sub_widgets[#sub_widgets + 1] = { setting_id = id .. "_pack_limit", type = "numeric", default_value = 4, range = { 1, 10 }, title = "pack_limit", tooltip = "pack_limit_description" }
+	end
 	for _, cue in ipairs(cues) do
 		mod.cue_group[cue] = id
 		sub_widgets[#sub_widgets + 1] = { setting_id = cue .. "_enabled", type = "checkbox", default_value = true, tooltip = "cue_enabled_tooltip" }
@@ -40,8 +45,8 @@ return {
 			},
 
 			breed_group("grp_trapper", { "trapper_windup", "trapper_interrupted", "trapper_reload", "trapper_proximity", "trapper_footsteps", "trapper_laugh" }),
-			breed_group("grp_hound", { "hound_leap", "hound_approach", "hound_growl", "hound_footsteps" }),
-			breed_group("grp_mutant", { "mutant_charge", "mutant_breath", "mutant_rattle", "mutant_footsteps" }),
+			breed_group("grp_hound", { "hound_leap", "hound_approach", "hound_growl", "hound_footsteps" }, nil, true),
+			breed_group("grp_mutant", { "mutant_charge", "mutant_breath", "mutant_rattle", "mutant_footsteps" }, nil, true),
 			breed_group("grp_poxburster", { "poxburster_beep", "poxburster_footsteps" }, false),
 			breed_group("grp_flamer", { "flamer_tank", "flamer_aim", "flamer_ignite", "flamer_flame_dreg", "flamer_flame_scab", "dreg_flamer_footsteps", "scab_flamer_footsteps" }),
 			breed_group("grp_bomber", { "bomber_throw", "bomber_footsteps" }),

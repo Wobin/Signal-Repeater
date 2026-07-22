@@ -24,7 +24,6 @@ return {
 	},
 	{
 		key = "mutant_charge", setting_id = "mutant_charge",
-		crowd_gain = { over = 4, gain = 0.9 },
 		hook = {
 			kind = "sound_event",
 			event = "wwise/events/minions/play_enemy_mutant_charger_charge_growl",
@@ -52,7 +51,6 @@ return {
 	},
 	{
 		key = "hound_leap", setting_id = "hound_leap",
-		crowd_gain = { over = 4, gain = 0.9 },
 		hook = {
 			kind = "sound_event",
 			event = "wwise/events/minions/play_enemy_chaos_hound_vce_leap",
@@ -124,7 +122,6 @@ return {
 	},
 	{
 		key = "mutant_breath", setting_id = "mutant_breath",
-		crowd_gain = { over = 4, gain = 0.9 },
 		hook = {
 			kind = "sound_event",
 			event = "wwise/events/minions/play_enemy_mutant_charger_run_breath",
@@ -139,7 +136,6 @@ return {
 	},
 	{
 		key = "mutant_rattle", setting_id = "mutant_rattle",
-		crowd_gain = { over = 4, gain = 0.9 },
 		hook = {
 			kind = "sound_event",
 			event = "wwise/events/minions/play_enemy_mutant_charger_run_rattle",
@@ -165,7 +161,7 @@ return {
 		mode = "play_once",
 		overlap = true,
 		gain = 1.4,
-		alerted_gain = 0.75,
+		alerted_gain = 0.5,
 		min_interval = 0.05,
 		max_duration = 2,
 	},

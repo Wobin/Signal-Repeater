@@ -12,6 +12,7 @@ local math_random = math.random
 local math_huge = math.huge
 local pairs = pairs
 local table_remove = table.remove
+local table_sort = table.sort
 local pcall = pcall
 local tostring = tostring
 
@@ -240,10 +241,27 @@ local function local_player_position()
 end
 
 local function apply_position(entry)
-	if not unit_alive(entry.unit) then return end
+	local alive = unit_alive(entry.unit)
+
+	if alive then
+		local ok, pos = pcall(unit_position, entry.unit)
+		if ok and pos then
+			entry.last_x, entry.last_y, entry.last_z = Vector3.x(pos), Vector3.y(pos), Vector3.z(pos)
+		end
+	end
+
+	local target
+	if alive then
+		target = entry.unit
+	elseif entry.last_x then
+		target = Vector3(entry.last_x, entry.last_y, entry.last_z)
+	else
+		return
+	end
+
 	local min_d, max_d = cue_min_distance(entry.cue), cue_max_distance(entry.cue)
 	for i = 1, #entry.play_ids do
-		mod.simple_audio.set_position(entry.play_ids[i], entry.unit, DECAY, min_d, max_d)
+		mod.simple_audio.set_position(entry.play_ids[i], target, DECAY, min_d, max_d)
 	end
 end
 
@@ -261,67 +279,129 @@ local last_played = {}
 local PRUNE_INTERVAL = 10
 local PRUNE_AGE = 30
 
-local CROWD_TTL = 0.5
-local crowd_counts = {}
-
-local function breed_population(breed)
-	local cached = crowd_counts[breed]
-	if cached and clock - cached.at < CROWD_TTL then
-		return cached.count
-	end
-
-	local count = 0
+local function enemy_units()
 	local side_system = Managers.state and Managers.state.side
 	local pm = Managers.player
-	if side_system and pm then
-		local player = pm:local_player_safe(1)
-		local player_unit = player and player.player_unit
-		local side = player_unit and side_system.side_by_unit[player_unit]
-		if side then
-			local enemies = side:relation_units("enemy")
-			for i = 1, #enemies do
-				local other = enemies[i]
-				if unit_alive(other) and mod.units.breed_name(other) == breed then
-					count = count + 1
-				end
-			end
-		end
-	end
-
-	crowd_counts[breed] = { count = count, at = clock }
-	return count
+	if not side_system or not pm then return nil end
+	local player = pm:local_player_safe(1)
+	local player_unit = player and player.player_unit
+	if not player_unit then return nil end
+	local side = side_system.side_by_unit[player_unit]
+	if not side then return nil end
+	return side:relation_units("enemy"), player_unit
 end
 
-local function crowd_scale(cue, unit)
-	local crowd = cue.crowd_gain
-	if not crowd then return 1 end
-	local breed = mod.units.breed_name(unit)
-	if not breed then return 1 end
-	if breed_population(breed) > crowd.over then
-		return crowd.gain
-	end
-	return 1
-end
-
-local function targets_teammate(unit)
-	local target = target_unit_of(unit)
-	if not target then return false end
+local function local_player_unit()
 	local pm = Managers.player
-	if not pm then return false end
-	local local_player = pm:local_player_safe(1)
-	local local_unit = local_player and local_player.player_unit
-	if target == local_unit then return false end
+	local local_player = pm and pm:local_player_safe(1)
+	return local_player and local_player.player_unit, pm
+end
+
+local function is_teammate_target(target)
+	if not target then return false end
+	local local_unit, pm = local_player_unit()
+	if not pm or target == local_unit then return false end
 	return pm:player_by_unit(target) ~= nil
 end
 
 local function skip_for_teammate(cue, unit)
 	if not mod.settings.teammate_skip(cue.setting_id) then return false end
-	return targets_teammate(unit)
+	return is_teammate_target(target_unit_of(unit))
+end
+
+local function targets_local_player(unit)
+	local target = target_unit_of(unit)
+	if not target then return false end
+	local local_unit = local_player_unit()
+	return local_unit ~= nil and target == local_unit
+end
+
+local OCCLUSION_TTL = 0.15
+local occlusion_cache = {}
+
+local function occlusion_for(unit)
+	local cached = occlusion_cache[unit]
+	if cached and clock - cached.at < OCCLUSION_TTL then
+		return cached.value
+	end
+	local value = mod.occlusion.fraction(unit)
+	occlusion_cache[unit] = { value = value, at = clock }
+	return value
+end
+
+local PACK_TTL = 0.5
+local pack_sets = {}
+local group_breeds_cache
+
+local function group_breeds(group)
+	if not group_breeds_cache then
+		group_breeds_cache = {}
+		for _, cue in ipairs(mod.catalog) do
+			local cue_group = mod.cue_group and mod.cue_group[cue.setting_id]
+			local breeds = cue.hook and cue.hook.breeds
+			if cue_group and breeds then
+				local set = group_breeds_cache[cue_group]
+				if not set then
+					set = {}
+					group_breeds_cache[cue_group] = set
+				end
+				for i = 1, #breeds do
+					set[breeds[i]] = true
+				end
+			end
+		end
+	end
+	return group_breeds_cache[group]
+end
+
+local function pack_active_set(group, breeds, limit)
+	local cached = pack_sets[group]
+	if cached and cached.limit == limit and clock - cached.at < PACK_TTL then
+		return cached.set
+	end
+
+	local set = {}
+	local enemies, player_unit = enemy_units()
+	local player_pos = local_player_position()
+	if enemies and player_unit and player_pos then
+		local candidates = {}
+		for i = 1, #enemies do
+			local other = enemies[i]
+			if unit_alive(other)
+				and breeds[mod.units.breed_name(other)]
+				and target_unit_of(other) == player_unit
+			then
+				candidates[#candidates + 1] = {
+					unit = other,
+					distance = Vector3.distance(unit_position(other), player_pos),
+				}
+			end
+		end
+		table_sort(candidates, function(a, b) return a.distance < b.distance end)
+		for i = 1, limit do
+			local candidate = candidates[i]
+			if not candidate then break end
+			set[candidate.unit] = true
+		end
+	end
+
+	pack_sets[group] = { set = set, at = clock, limit = limit }
+	return set
+end
+
+local function pack_culled(cue, unit)
+	local limit = mod.settings.pack_limit(cue.setting_id)
+	if not limit then return false end
+	if not targets_local_player(unit) then return false end
+	local group = mod.cue_group and mod.cue_group[cue.setting_id]
+	if not group then return false end
+	local breeds = group_breeds(group)
+	if not breeds then return false end
+	return not pack_active_set(group, breeds, limit)[unit]
 end
 
 function CuePlayer.play(cue, unit, explicit_path)
 	if not unit_alive(unit) then return end
-	if skip_for_teammate(cue, unit) then return end
 
 	if cue.min_interval then
 		local rate_key = cue.key .. "|" .. tostring(unit)
@@ -329,6 +409,9 @@ function CuePlayer.play(cue, unit, explicit_path)
 		if last and clock - last < cue.min_interval then return end
 		last_played[rate_key] = clock
 	end
+
+	if skip_for_teammate(cue, unit) then return end
+	if pack_culled(cue, unit) then return end
 
 	local key
 	if cue.overlap then
@@ -343,7 +426,7 @@ function CuePlayer.play(cue, unit, explicit_path)
 	local entry = { unit = unit, cue = cue, elapsed = 0, throttle = 0, play_ids = {} }
 	local first_path
 	local play_distance = listener_distance(unit)
-	local play_occluded = mod.occlusion.fraction(unit)
+	local play_occluded = occlusion_for(unit)
 
 	for i = 1, #layers do
 		local path = explicit_path or resolve_audio(cue, layers[i], cue.key .. "|L" .. i, unit)
@@ -352,13 +435,20 @@ function CuePlayer.play(cue, unit, explicit_path)
 
 			local settings = {
 				audio_type = mod.settings.audio_type(),
-				volume = cue_volume(cue) * occlusion_volume(play_occluded) * alerted_scale(cue, unit) * crowd_scale(cue, unit),
+				volume = cue_volume(cue) * occlusion_volume(play_occluded) * alerted_scale(cue, unit),
 				loop = cue.mode == "loop" or nil,
 				filters = distance_filter(cue, play_distance, play_occluded),
 			}
 
 			if i == 1 then
 				settings.on_update = function(play_id, dt)
+					if not unit_alive(entry.unit) then
+						if not entry.detached then
+							entry.detached = true
+							apply_position(entry)
+						end
+						return
+					end
 					entry.throttle = entry.throttle + dt
 					if entry.throttle >= FOLLOW_THROTTLE then
 						entry.throttle = 0
@@ -388,6 +478,8 @@ function CuePlayer.play(cue, unit, explicit_path)
 		local player_pos = local_player_position()
 		Debug.played(cue, first_path, player_pos and Vector3.distance(unit_position(unit), player_pos) or nil)
 	end
+
+	return true
 end
 
 function CuePlayer.start_ramp(cue, unit)
@@ -456,6 +548,11 @@ function CuePlayer.update(dt)
 				last_played[rate_key] = nil
 			end
 		end
+		for cached_unit, entry in pairs(occlusion_cache) do
+			if clock - entry.at > PRUNE_AGE then
+				occlusion_cache[cached_unit] = nil
+			end
+		end
 	end
 
 	for key, entry in pairs(active) do
@@ -496,14 +593,19 @@ function CuePlayer.update(dt)
 				ramp.target = nil
 			end
 
+			local muted = mod.settings.teammate_skip(cue.setting_id) and is_teammate_target(ramp.target)
+			if muted then
+				stop_ramp_sounds(ramp)
+			end
+
 			local emitter_pos = unit_position(unit)
 			local reference_pos = ramp.target and unit_position(ramp.target) or player_pos
 
-			if reference_pos then
+			if reference_pos and not muted then
 				local params = cue.ramp
 				local d = Vector3.distance(emitter_pos, reference_pos)
 				local ramp_distance = player_pos and Vector3.distance(emitter_pos, player_pos) or nil
-				local ramp_occluded = mod.occlusion.fraction(unit)
+				local ramp_occluded = occlusion_for(unit)
 				local constant = params.constant
 
 				if constant and d <= constant.distance then

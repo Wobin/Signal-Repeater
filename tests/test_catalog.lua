@@ -169,24 +169,9 @@ for _, cue in ipairs(Catalog) do
 		assert(cue.ramp == nil, key .. ": non-ramped cue carries a ramp table")
 	end
 
-	if cue.crowd_gain then
-		assert(type(cue.crowd_gain.over) == "number" and cue.crowd_gain.over >= 1,
-			key .. ": crowd_gain.over must be a count of at least 1")
-		assert(type(cue.crowd_gain.gain) == "number" and cue.crowd_gain.gain > 0 and cue.crowd_gain.gain <= 1,
-			key .. ": crowd_gain.gain must be a reducing factor in (0, 1]")
-	end
+	assert(cue.crowd_gain == nil,
+		key .. ": crowd_gain is obsolete, the pack_limit cull replaced it")
 end
-
--- Crowd dampening applies to charging specials only, and never to poxbursters.
-local crowd_cues, poxburster_crowd = {}, false
-for _, cue in ipairs(Catalog) do
-	if cue.crowd_gain then
-		crowd_cues[#crowd_cues + 1] = cue.key
-		if cue.key:find("poxburster", 1, true) then poxburster_crowd = true end
-	end
-end
-assert(not poxburster_crowd, "poxburster cues must not carry crowd_gain")
-assert(#crowd_cues == 4, "expected 4 crowd_gain cues (mutant charge/breath/rattle, hound leap), got " .. #crowd_cues)
 
 -- CueHooks dispatches effect_template / inventory / breed_spawn cues through single-slot lookup
 -- tables, so two cues claiming the same key means the second silently REPLACES the first. Shared
@@ -250,7 +235,8 @@ for _, w in ipairs(Data.options.widgets) do
 		if GLOBALS[id] then
 			assert(Loc[id], "missing localization for widget " .. id)
 			seen_global[id] = true
-		elseif id == w.setting_id .. "_volume" or id == w.setting_id .. "_teammate_skip" then
+		elseif id == w.setting_id .. "_volume" or id == w.setting_id .. "_teammate_skip"
+			or id == w.setting_id .. "_pack_limit" then
 			-- per-breed group setting: shares one localized title across all groups
 			assert(sw.title and Loc[sw.title],
 				w.setting_id .. ": group setting " .. id .. " has no shared title loc: " .. tostring(sw.title))
@@ -271,6 +257,33 @@ for _, w in ipairs(Data.options.widgets) do
 		assert(group_settings[w.setting_id .. "_volume"], w.setting_id .. ": missing per-breed volume slider")
 		assert(group_settings[w.setting_id .. "_teammate_skip"], w.setting_id .. ": missing per-breed teammate-skip toggle")
 	end
+end
+
+-- The pack cull is only meaningful for breeds that arrive in packs; every cue it can gate must
+-- resolve back to a group that actually carries the slider.
+local PACK_GROUPS = { grp_hound = true, grp_mutant = true }
+for _, w in ipairs(Data.options.widgets) do
+	local has_pack = group_settings[w.setting_id .. "_pack_limit"] or false
+	assert(has_pack == (PACK_GROUPS[w.setting_id] or false),
+		w.setting_id .. ": pack_limit slider presence does not match the pack-breed list")
+end
+
+-- The cull pools every variant of a breed under one limit (6 hounds means 6, not 6 of each), which
+-- it does by unioning hook.breeds across the group. A group whose cues declare no breeds would
+-- resolve to an empty set and the cull would silently never apply.
+for group in pairs(PACK_GROUPS) do
+	local breeds, n = {}, 0
+	for _, cue in ipairs(Catalog) do
+		if fake_mod.cue_group[cue.setting_id] == group and cue.hook and cue.hook.breeds then
+			for _, breed in ipairs(cue.hook.breeds) do
+				if not breeds[breed] then
+					breeds[breed] = true
+					n = n + 1
+				end
+			end
+		end
+	end
+	assert(n > 0, group .. ": pack cull has no breeds to pool (no cue in the group declares hook.breeds)")
 end
 
 for id in pairs(GLOBALS) do

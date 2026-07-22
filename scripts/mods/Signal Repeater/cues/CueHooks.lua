@@ -166,9 +166,9 @@ function CueHooks.install()
 					if not unit then return end
 					if not Units.breed_matches(cue.hook.breeds, unit) then return end
 
-					CuePlayer.play(cue, unit)
+					local played = CuePlayer.play(cue, unit)
 
-					if Settings.suppress(cue.setting_id) then
+					if played and Settings.suppress(cue.setting_id) then
 						Debug.suppressed(cue, event_name)
 						return true
 					end

@@ -13,7 +13,7 @@ local SoundTest = {}
 
 local ORBIT_RADIUS = 6
 local ORBIT_PERIOD = 8
-local ORBIT_HEIGHT = 1.2    -- roughly ear height above the player's feet
+local ORBIT_HEIGHT = 1.2
 local MOVE_THROTTLE = 0.05
 
 local TEST_PATTERN = "mods/Signal Repeater/audio/cues/hound_approach/*.ogg"
