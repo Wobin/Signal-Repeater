@@ -71,11 +71,18 @@ end
 
 Settings.in_training_ground = in_training_ground
 
-function Settings.active()
+local function mod_on()
 	if not cache.enabled then return false end
-	if cache.psykhanium_off and in_training_ground() then return false end
 	local ok, on = pcall(function() return mod:is_enabled() end)
 	if ok and on == false then return false end
+	return true
+end
+
+Settings.mod_on = mod_on
+
+function Settings.active()
+	if not mod_on() then return false end
+	if cache.psykhanium_off and in_training_ground() then return false end
 	return true
 end
 

@@ -52,5 +52,17 @@ Settings.refresh()
 set_mode("shooting_range")
 assert(Settings.active() == true, "gate off -> the mod runs in the Psykhanium")
 
+-- The Psykhanium gate silences CUES only. The sound test is a deliberate calibration tool and the
+-- Psykhanium is where you would use it, so mod_on() must stay true there for it to keep orbiting.
+fake_values["disable_in_psykhanium"] = true
+Settings.refresh()
+set_mode("shooting_range")
+assert(Settings.active() == false, "cues are gated in the Psykhanium")
+assert(Settings.mod_on() == true, "the mod itself is still on, so the sound test keeps running")
+fake_values["enabled"] = false
+Settings.refresh()
+assert(Settings.mod_on() == false, "master off -> nothing runs, sound test included")
+fake_values["enabled"] = nil
+
 _G.Managers = nil
 print("test_settings OK")

@@ -2,12 +2,12 @@
 	Name: Signal Repeater
 	Author: Wobin
 	Date: 23/07/2026
-	Version: 2.4.0
+	Version: 2.4.1
 	Repository: https://github.com/Wobin/Signal-Repeater
 ]]--
 
 local mod = get_mod("Signal Repeater")
-mod.version = "2.4.0"
+mod.version = "2.4.1"
 
 local ROOT = "Signal Repeater/scripts/mods/Signal Repeater/"
 
@@ -24,8 +24,12 @@ mod.source_registry = mod:io_dofile(ROOT .. "playback/SourceRegistry")
 
 local was_active = false
 
-local function teardown()
+local function stop_cues()
 	mod.cue_player.stop_all()
+end
+
+local function teardown()
+	stop_cues()
 	if mod.sound_test.is_active() then
 		mod.sound_test.stop()
 	end
@@ -37,7 +41,10 @@ mod.update = function(dt)
 	if not active then
 		if was_active then
 			was_active = false
-			teardown()
+			stop_cues()
+		end
+		if mod.settings.mod_on() then
+			mod.sound_test.update(dt)
 		end
 		return
 	end
