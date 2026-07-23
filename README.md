@@ -14,7 +14,7 @@ The mod is client-side only. No data is transmitted to the host and no game stat
 
 ## Cues
 
-50 cues across 13 enemies.
+58 cues across 17 enemies.
 
 | Enemy | Cues |
 |---|---|
@@ -26,6 +26,10 @@ The mod is client-side only. No data is transmitted to the host and no game stat
 | Bomber | grenade-throw callout, footsteps |
 | Sniper | aim beam, footsteps |
 | Plasma Gunner | charge-up (charge tone and overlay) |
+| Beast of Nurgle | tongue grab, vomit wind-up, attack roar |
+| Chaos Spawn | leap, attack roar |
+| Plague Ogryn | charging breath |
+| Houndmaster | charge bellow, melee swing |
 | Daemonhost | alert scream |
 | Reaper | callouts (alerted, opening fire), readying gun, heavy stubber, melee, footsteps |
 | Crusher | callouts (alerted, assault), overhead smash, hammer swing, melee, footsteps |
@@ -37,6 +41,9 @@ dialogue system at the point of playback rather than selecting a line at random.
 
 Cue selection is derived from the game's own breed data. Sounds marked `use_proximity_culling = false`
 are exempted by Fatshark from distance culling; those sounds form the basis of this cue set.
+
+Monstrosities default to repeating their cues regardless of who is being targeted, since a monstrosity
+engaging a team-mate remains a threat to everyone near it.
 
 ## Footsteps
 

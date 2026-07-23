@@ -400,6 +400,11 @@ local function pack_culled(cue, unit)
 	return not pack_active_set(group, breeds, limit)[unit]
 end
 
+function CuePlayer.silenced_by_targeting(cue, unit)
+	if not unit or not unit_alive(unit) then return false end
+	return skip_for_teammate(cue, unit) or pack_culled(cue, unit)
+end
+
 function CuePlayer.play(cue, unit, explicit_path)
 	if not unit_alive(unit) then return end
 

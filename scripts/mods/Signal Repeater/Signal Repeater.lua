@@ -2,12 +2,12 @@
 	Name: Signal Repeater
 	Author: Wobin
 	Date: 23/07/2026
-	Version: 2.3.0
+	Version: 2.4.0
 	Repository: https://github.com/Wobin/Signal-Repeater
 ]]--
 
 local mod = get_mod("Signal Repeater")
-mod.version = "2.3.0"
+mod.version = "2.4.0"
 
 local ROOT = "Signal Repeater/scripts/mods/Signal Repeater/"
 

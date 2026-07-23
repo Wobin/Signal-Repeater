@@ -1,7 +1,7 @@
 {
 	"name": "Signal Repeater",
 	"author": "Wobin",
-	"version": "2.3.0",
+	"version": "2.4.0",
 	"source": "https://github.com/Wobin/Signal-Repeater",
 	"description": "Re-plays important special and elite enemy cues through SimpleAudio so they are always audible.",
 	"order": {

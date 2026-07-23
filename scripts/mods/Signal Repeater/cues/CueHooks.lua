@@ -39,6 +39,8 @@ local function index_catalog()
 	end
 end
 
+local suppressed_starts = {}
+
 local function unit_from(source)
 	local ok, alive = pcall(Unit.alive, source)
 	if ok and alive then
@@ -169,6 +171,9 @@ function CueHooks.install()
 					local played = CuePlayer.play(cue, unit)
 
 					if played and Settings.suppress(cue.setting_id) then
+						if cue.hook.stop_event then
+							suppressed_starts[cue.key .. "|" .. tostring(unit)] = true
+						end
 						Debug.suppressed(cue, event_name)
 						return true
 					end
@@ -183,7 +188,10 @@ function CueHooks.install()
 
 					CuePlayer.stop_unit(cue, unit)
 
-					if Settings.active() and Settings.cue_enabled(cue.setting_id) and Settings.suppress(cue.setting_id) then
+					local start_key = cue.key .. "|" .. tostring(unit)
+					local suppressed_start = suppressed_starts[start_key]
+					suppressed_starts[start_key] = nil
+					if suppressed_start then
 						return true
 					end
 				end)
@@ -191,5 +199,7 @@ function CueHooks.install()
 		end
 	end
 end
+
+CueHooks.unit_from = unit_from
 
 return CueHooks

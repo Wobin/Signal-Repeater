@@ -37,7 +37,7 @@ local function glob_count(pattern)
 	return #glob_names(pattern:match("^(.*)/[^/]*$"))
 end
 
-assert(#Catalog == 50, "expected 50 cues, got " .. #Catalog)
+assert(#Catalog == 58, "expected 58 cues, got " .. #Catalog)
 
 local seen_keys = {}
 for _, cue in ipairs(Catalog) do
