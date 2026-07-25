@@ -216,8 +216,10 @@ local function stop_ramp_sounds(ramp)
 end
 
 local function target_unit_of(unit)
-	local session_manager = Managers.state.game_session
-	local unit_spawner = Managers.state.unit_spawner
+	local state = Managers.state
+	if not state then return nil end
+	local session_manager = state.game_session
+	local unit_spawner = state.unit_spawner
 	if not session_manager or not unit_spawner then return nil end
 
 	local game_object_id = unit_spawner:game_object_id(unit)

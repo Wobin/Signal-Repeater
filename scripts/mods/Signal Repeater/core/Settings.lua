@@ -1,7 +1,5 @@
 local mod = get_mod("Signal Repeater")
 
-local pcall = pcall
-
 local Settings = {}
 
 local cache = {}
@@ -62,8 +60,8 @@ local function in_training_ground()
 
 	if game_mode ~= seen_game_mode then
 		seen_game_mode = game_mode
-		local ok, name = pcall(function() return game_mode:game_mode_name() end)
-		seen_is_training = (ok and TRAINING_MODES[name]) and true or false
+		local name = game_mode:game_mode_name()
+		seen_is_training = TRAINING_MODES[name] and true or false
 	end
 
 	return seen_is_training
@@ -73,8 +71,7 @@ Settings.in_training_ground = in_training_ground
 
 local function mod_on()
 	if not cache.enabled then return false end
-	local ok, on = pcall(function() return mod:is_enabled() end)
-	if ok and on == false then return false end
+	if mod:is_enabled() == false then return false end
 	return true
 end
 

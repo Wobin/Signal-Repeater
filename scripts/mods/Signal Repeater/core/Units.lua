@@ -9,8 +9,8 @@ function Units.alive(unit)
 		return false
 	end
 
-	local ok, health_extension = pcall(ScriptUnit.has_extension, unit, "health_system")
-	if ok and health_extension and health_extension.is_alive and not health_extension:is_alive() then
+	local health_extension = ScriptUnit.has_extension(unit, "health_system")
+	if health_extension and health_extension.is_alive and not health_extension:is_alive() then
 		return false
 	end
 
