@@ -50,7 +50,7 @@ local function listener_position()
 	return Unit.world_position(unit, 1) + Vector3(0, 0, EAR_HEIGHT)
 end
 
-function Occlusion.fraction(unit)
+local function fraction_to(to)
 	if not in_gameplay() then
 		return 0
 	end
@@ -61,11 +61,10 @@ function Occlusion.fraction(unit)
 	end
 
 	local from = listener_position()
-	if not from or not unit or not Unit.alive(unit) then
+	if not from then
 		return 0
 	end
 
-	local to = Unit.world_position(unit, 1) + Vector3(0, 0, EMITTER_HEIGHT)
 	local ray = to - from
 	local distance = Vector3.length(ray)
 
@@ -98,6 +97,20 @@ function Occlusion.fraction(unit)
 	end
 
 	return blocked / RAY_COUNT
+end
+
+function Occlusion.fraction(unit)
+	if not unit or not Unit.alive(unit) then
+		return 0
+	end
+	return fraction_to(Unit.world_position(unit, 1) + Vector3(0, 0, EMITTER_HEIGHT))
+end
+
+function Occlusion.fraction_at(position)
+	if not position then
+		return 0
+	end
+	return fraction_to(position)
 end
 
 return Occlusion

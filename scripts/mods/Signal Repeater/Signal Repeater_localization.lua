@@ -100,8 +100,14 @@ return {
 	bomber_footsteps_suppress = { en = "    ... and silence the original" },
 
 	grp_sniper = { en = "Sniper" },
+	sniper_flash_enabled = { en = "Scope glint (about to fire at you)" },
+	sniper_flash_suppress = { en = "    ... and silence the original" },
 	sniper_aim_enabled = { en = "Aim beam" },
 	sniper_aim_suppress = { en = "    ... and silence the original" },
+	sniper_shot_enabled = { en = "Shot" },
+	sniper_shot_suppress = { en = "    ... and silence the original" },
+	sniper_foley_enabled = { en = "Movement" },
+	sniper_foley_suppress = { en = "    ... and silence the original" },
 	sniper_footsteps_enabled = { en = "Footsteps" },
 	sniper_footsteps_suppress = { en = "    ... and silence the original" },
 

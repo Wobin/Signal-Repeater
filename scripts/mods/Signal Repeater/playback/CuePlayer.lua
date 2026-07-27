@@ -82,7 +82,7 @@ local function minion_speed(unit)
 	if not ok or not locomotion then
 		return 0
 	end
-	local got, velocity = pcall(function() return locomotion:current_velocity() end)
+	local got, velocity = pcall(locomotion.current_velocity, locomotion)
 	if not got or not velocity then
 		return 0
 	end
@@ -281,7 +281,7 @@ local last_played = {}
 local PRUNE_INTERVAL = 10
 local PRUNE_AGE = 30
 
-local function enemy_units()
+local function special_enemies()
 	local side_system = Managers.state and Managers.state.side
 	local pm = Managers.player
 	if not side_system or not pm then return nil end
@@ -290,7 +290,7 @@ local function enemy_units()
 	if not player_unit then return nil end
 	local side = side_system.side_by_unit[player_unit]
 	if not side then return nil end
-	return side:relation_units("enemy"), player_unit
+	return side:alive_units_by_tag("enemy", "special"), player_unit
 end
 
 local function local_player_unit()
@@ -363,12 +363,12 @@ local function pack_active_set(group, breeds, limit)
 	end
 
 	local set = {}
-	local enemies, player_unit = enemy_units()
+	local specials, player_unit = special_enemies()
 	local player_pos = local_player_position()
-	if enemies and player_unit and player_pos then
+	if specials and player_unit and player_pos then
 		local candidates = {}
-		for i = 1, #enemies do
-			local other = enemies[i]
+		for i = 1, specials.size do
+			local other = specials[i]
 			if unit_alive(other)
 				and breeds[mod.units.breed_name(other)]
 				and target_unit_of(other) == player_unit
@@ -433,12 +433,16 @@ function CuePlayer.play(cue, unit, explicit_path)
 	local entry = { unit = unit, cue = cue, elapsed = 0, throttle = 0, play_ids = {} }
 	local first_path
 	local play_distance = listener_distance(unit)
-	local play_occluded = occlusion_for(unit)
+	local play_occluded
 
 	for i = 1, #layers do
 		local path = explicit_path or resolve_audio(cue, layers[i], cue.key .. "|L" .. i, unit)
 		if path then
 			first_path = first_path or path
+
+			if not play_occluded then
+				play_occluded = occlusion_for(unit)
+			end
 
 			local settings = {
 				audio_type = mod.settings.audio_type(),
@@ -487,6 +491,28 @@ function CuePlayer.play(cue, unit, explicit_path)
 	end
 
 	return true
+end
+
+function CuePlayer.play_at(cue, position)
+	if not position then return false end
+
+	local path = resolve_audio(cue, cue.audio, cue.key)
+	if not path then return false end
+
+	local player_pos = local_player_position()
+	local play_distance = player_pos and Vector3.distance(position, player_pos) or nil
+	local play_occluded = mod.occlusion.fraction_at(position)
+
+	local settings = {
+		audio_type = mod.settings.audio_type(),
+		volume = cue_volume(cue) * occlusion_volume(play_occluded),
+		filters = distance_filter(cue, play_distance, play_occluded),
+	}
+
+	local id = mod.simple_audio.play_file(
+		path, settings, position, DECAY, cue_min_distance(cue), cue_max_distance(cue)
+	)
+	return id ~= nil
 end
 
 function CuePlayer.start_ramp(cue, unit)

@@ -16,11 +16,14 @@ local CueHooks = {}
 local template_cues = {}
 local inventory_cues = {}
 local spawn_cues = {}
+local rpc_wwise_cues = {}
 
 local function index_catalog()
 	for _, cue in ipairs(CueCatalog) do
 		local hook = cue.hook
-		if hook.kind == "breed_spawn" then
+		if hook.kind == "rpc_wwise" then
+			HookRegistry.claim(rpc_wwise_cues, hook.event, cue, "rpc_wwise event")
+		elseif hook.kind == "breed_spawn" then
 			HookRegistry.claim(spawn_cues, hook.breed, cue, "breed_spawn breed")
 		elseif hook.kind == "inventory" then
 			for _, ev in ipairs(hook.events) do
@@ -54,6 +57,27 @@ local function fire(cue, unit)
 	if not Settings.cue_enabled(cue.setting_id) then return end
 	if not Units.breed_matches(cue.hook.breeds, unit) then return end
 	CuePlayer.play(cue, unit)
+end
+
+local rpc_event_ids
+local function rpc_id_map()
+	if rpc_event_ids then return rpc_event_ids end
+	local lookup = rawget(_G, "NetworkLookup")
+	if not lookup or not lookup.sound_events then return nil end
+	local map = {}
+	for event_name, cue in pairs(rpc_wwise_cues) do
+		local id = lookup.sound_events[event_name]
+		if id then map[id] = cue end
+	end
+	rpc_event_ids = map
+	return map
+end
+
+local function on_rpc_wwise(cue, position)
+	if not Settings.active() then return false end
+	if not Settings.cue_enabled(cue.setting_id) then return false end
+	local played = CuePlayer.play_at(cue, position)
+	return played and Settings.suppress(cue.setting_id)
 end
 
 local function sound_event_patterns(hook)
@@ -138,6 +162,20 @@ function CueHooks.install()
 				end
 			end
 			return func(self, template_context, template_effect, template)
+		end)
+	end)
+
+	mod:hook_require("scripts/extension_systems/fx/fx_system", function(fx_system_class)
+		mod:hook(fx_system_class, "rpc_trigger_wwise_event", function(func, self, channel_id, event_id, optional_position, ...)
+			local ids = rpc_id_map()
+			local cue = ids and ids[event_id]
+			if cue and optional_position then
+				local ok, suppress = pcall(on_rpc_wwise, cue, optional_position)
+				if ok and suppress then
+					return
+				end
+			end
+			return func(self, channel_id, event_id, optional_position, ...)
 		end)
 	end)
 

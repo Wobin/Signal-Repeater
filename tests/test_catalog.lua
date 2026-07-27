@@ -11,7 +11,7 @@ local Loc = dofile(ROOT .. "Signal Repeater_localization.lua")
 
 local KINDS = {
 	effect_template = true, sound_event = true, inventory = true, breed_spawn = true,
-	vo_event = true, utility = true,
+	vo_event = true, utility = true, rpc_wwise = true,
 }
 
 local function exists(path)
@@ -37,7 +37,7 @@ local function glob_count(pattern)
 	return #glob_names(pattern:match("^(.*)/[^/]*$"))
 end
 
-assert(#Catalog == 58, "expected 58 cues, got " .. #Catalog)
+assert(#Catalog == 61, "expected 61 cues, got " .. #Catalog)
 
 local seen_keys = {}
 for _, cue in ipairs(Catalog) do

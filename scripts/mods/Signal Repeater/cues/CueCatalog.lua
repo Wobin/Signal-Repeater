@@ -1,5 +1,43 @@
 return {
 	{
+		key = "sniper_shot", setting_id = "sniper_shot",
+		hook = {
+			kind = "inventory",
+			events = { "wwise/events/weapon/play_weapon_longlas_minion" },
+			breeds = { "renegade_sniper" },
+		},
+		audio = { kind = "glob", pattern = "mods/Signal Repeater/audio/cues/sniper_shot/*.ogg" },
+		range = 150,
+		lpf = { { 0, 0 }, { 49.5, 0 }, { 86.4, 26 }, { 150, 50 } },
+		mode = "play_once",
+		overlap = true,
+		max_duration = 3,
+	},
+	{
+		key = "sniper_foley", setting_id = "sniper_foley",
+		hook = {
+			kind = "sound_event",
+			event = "wwise/events/minions/play_minion_sniper_run_foley",
+			breeds = { "renegade_sniper" },
+		},
+		audio = { kind = "glob", pattern = "mods/Signal Repeater/audio/cues/sniper_foley/*.ogg" },
+		range = 60,
+		lpf = { { 0, 0 }, { 60, 45 } },
+		mode = "play_once",
+		overlap = true,
+		min_interval = 0.2,
+		max_duration = 2,
+	},
+	{
+		key = "sniper_flash", setting_id = "sniper_flash",
+		hook = { kind = "rpc_wwise", event = "wwise/events/weapon/play_special_sniper_flash" },
+		audio = { kind = "glob", pattern = "mods/Signal Repeater/audio/cues/sniper_flash/*.ogg" },
+		range = 150,
+		lpf = { { 0, 0 }, { 49.5, 0 }, { 86.4, 26 }, { 150, 50 } },
+		mode = "play_once",
+		max_duration = 3,
+	},
+	{
 		key = "sniper_aim", setting_id = "sniper_aim",
 		hook = { kind = "effect_template", template = "renegade_sniper_laser" },
 		audio = { kind = "file", path = "mods/Signal Repeater/audio/cues/sniper_aim.ogg" },

@@ -51,7 +51,7 @@ return {
 			breed_group("grp_poxburster", { "poxburster_beep", "poxburster_footsteps" }, false),
 			breed_group("grp_flamer", { "flamer_tank", "flamer_aim", "flamer_ignite", "flamer_flame_dreg", "flamer_flame_scab", "dreg_flamer_footsteps", "scab_flamer_footsteps" }),
 			breed_group("grp_bomber", { "bomber_throw", "bomber_footsteps" }),
-			breed_group("grp_sniper", { "sniper_aim", "sniper_footsteps" }),
+			breed_group("grp_sniper", { "sniper_flash", "sniper_aim", "sniper_shot", "sniper_foley", "sniper_footsteps" }),
 			breed_group("grp_plasma", { "plasma_charge" }),
 			breed_group("grp_beast", { "beast_tongue", "beast_vomit", "beast_attack" }, false),
 			breed_group("grp_spawn", { "spawn_leap", "spawn_attack" }, false),
